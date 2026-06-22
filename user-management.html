@@ -78,28 +78,66 @@
   })();
 
   async function loadPendingStudents() {
-    const result = await callApi('listUnassignedStudents', { token: getSessionToken() });
-    if (!result.length) return;
+    try {
+      const result = await callApi('listUnassignedStudents', { token: getSessionToken() });
+      if (!result.length) return;
 
-    document.getElementById('pendingCard').style.display = 'block';
-    document.getElementById('pendingList').innerHTML = result.map(s => `
-      <div class="d-flex justify-content-between align-items-center border-top py-2 flex-wrap gap-2">
-        <div>${s.fullName} <span class="text-muted small">${s.email}</span></div>
-        <div class="d-flex gap-2">
-          <select class="form-select form-select-sm w-auto" id="classFor-${s.studentId}">
-            ${classesCache.map(c => `<option value="${c.classId}">${c.className}</option>`).join('')}
-          </select>
-          <button class="btn btn-sm btn-success" onclick="activateStudent('${s.studentId}')">Aktifkan</button>
+      document.getElementById('pendingCard').style.display = 'block';
+
+      // Jika belum ada kelas sama sekali, tampilkan peringatan jelas
+      // dan arahkan admin ke content-manager untuk buat kelas dulu.
+      if (!classesCache.length) {
+        document.getElementById('pendingList').innerHTML = `
+          <div class="alert alert-warning mb-0">
+            Ada <strong>${result.length}</strong> siswa menunggu aktivasi, tetapi
+            <strong>belum ada kelas yang dibuat</strong>.
+            Silakan buat kelas terlebih dahulu di halaman
+            <a href="content-manager.html" class="alert-link">Materi & Tugas → tab Kelas</a>,
+            lalu kembali ke sini.
+          </div>`;
+        return;
+      }
+
+      document.getElementById('pendingList').innerHTML = result.map(s => `
+        <div class="d-flex justify-content-between align-items-center border-top py-2 flex-wrap gap-2">
+          <div>
+            <strong>${s.fullName}</strong>
+            <span class="text-muted small ms-2">${s.email}</span>
+            ${s.nisn ? `<span class="text-muted small ms-2">NISN: ${s.nisn}</span>` : ''}
+          </div>
+          <div class="d-flex gap-2 align-items-center">
+            <select class="form-select form-select-sm" style="min-width:140px;" id="classFor-${s.studentId}">
+              <option value="">— Pilih Kelas —</option>
+              ${classesCache.map(c => `<option value="${c.classId}">${c.className}</option>`).join('')}
+            </select>
+            <button class="btn btn-sm btn-success" onclick="activateStudent('${s.studentId}')">Aktifkan</button>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `).join('');
+    } catch (err) {
+      // non-critical — jangan crash seluruh halaman
+      console.error('loadPendingStudents:', err);
+    }
   }
 
   async function activateStudent(studentId) {
-    const classId = document.getElementById('classFor-' + studentId).value;
+    const selectEl = document.getElementById('classFor-' + studentId);
+    if (!selectEl) return;
+    const classId = selectEl.value;
+
+    // Validasi sebelum memanggil backend supaya pesan errornya jelas
+    if (!classId) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Pilih Kelas Terlebih Dahulu',
+        text: 'Pilih kelas tujuan dari dropdown di sebelah nama siswa sebelum mengklik Aktifkan.'
+      });
+      return;
+    }
+
     try {
       await callApi('assignStudentToClass', { token: getSessionToken(), studentId, classId });
-      Swal.fire({ icon: 'success', title: 'Siswa diaktifkan', timer: 1200, showConfirmButton: false });
+      Swal.fire({ icon: 'success', title: 'Siswa berhasil diaktifkan!', timer: 1500, showConfirmButton: false });
       loadPendingStudents();
       loadUsers();
     } catch (err) {
