@@ -469,28 +469,5 @@
     w.document.close();
   }
 </script>
-
-  (async function init() {
-    const user = await requireLogin();
-    if (!user) return;
-    renderNavbar('students');
-
-    const classes = await callApi('listClasses', { token: getSessionToken() });
-    if (!classes.length) {
-      document.getElementById('rosterBody').innerHTML =
-        '<tr><td colspan="5" class="text-warning text-center py-4">Belum ada kelas. Buat kelas dulu di <a href="content-manager.html">Materi & Tugas → tab Kelas</a>.</td></tr>';
-      return;
-    }
-
-    const sel = document.getElementById('classSelect');
-    sel.innerHTML = classes.map(c => `<option value="${c.classId}">${c.className}</option>`).join('');
-    sel.addEventListener('change', loadRoster);
-
-    document.getElementById('addStudentBtn').addEventListener('click', () => addStudentDialog(classes));
-    document.getElementById('printBtn').addEventListener('click', printCredentials);
-
-    loadRoster();
-  })();
-
 </body>
 </html>
