@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Siswa — English Academy Indonesia</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app-navbar"></div>
+
+<div class="container pb-5">
+
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h5 class="fw-bold mb-0">👨‍🎓 Data Siswa</h5>
+      <p class="text-muted small mb-0">Tambah dan kelola siswa per kelas.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary" id="importBtn">📂 Import CSV</button>
+      <button class="btn btn-primary" id="addStudentBtn">+ Tambah Siswa</button>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
+    <label class="text-muted small mb-0">Kelas:</label>
+    <select class="form-select w-auto" id="classSelect"></select>
+    <button class="btn btn-sm btn-outline-secondary" id="printBtn">🖨️ Cetak Daftar Password</button>
+  </div>
+
+  <!-- Daftar siswa -->
+  <div class="card p-0">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Nama Siswa</th>
+          <th>Email / Username</th>
+          <th>NISN</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rosterBody">
+        <tr><td colspan="5" class="text-muted text-center py-4">Memuat...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Area cetak (tersembunyi, hanya muncul saat print) -->
+  <div id="printArea" style="display:none;"></div>
+
+</div>
+
+<!-- ===== MODAL IMPORT CSV ===== -->
+<div class="modal fade" id="importModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Import Siswa dari CSV</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Step 1: Upload file -->
+        <div id="importStep1">
+          <div class="alert alert-info small">
+            <strong>Format kolom CSV (header wajib ada di baris pertama):</strong><br>
+            <code>nama_lengkap, email, password, nisn</code>
+            <ul class="mb-1 mt-1">
+              <li><code>nama_lengkap</code> dan <code>email</code> — wajib</li>
+              <li><code>password</code> — opsional; jika kosong, otomatis diisi <em>namaDepan + 3 angka acak</em></li>
+              <li><code>nisn</code> — opsional</li>
+            </ul>
+          </div>
+          <a href="#" id="downloadTemplateBtn" class="btn btn-sm btn-outline-secondary mb-3">⬇ Unduh Template CSV</a>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Pilih Kelas</label>
+            <select class="form-select" id="importClassSelect"></select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Upload File CSV</label>
+            <input type="file" class="form-control" id="csvFileInput" accept=".csv,.txt">
+          </div>
+          <button class="btn btn-primary" id="parseCSVBtn" disabled>Baca & Preview Data</button>
+        </div>
+
+        <!-- Step 2: Preview -->
+        <div id="importStep2" style="display:none;">
+          <p class="small text-muted mb-2">
+            Preview <strong id="previewCount">0</strong> siswa yang akan diimpor ke kelas
+            <strong id="previewClass"></strong>. Koreksi jika ada yang salah, lalu klik Impor.
+          </p>
+          <div style="max-height:320px; overflow-y:auto;">
+            <table class="table table-sm table-bordered small">
+              <thead class="table-light">
+                <tr><th>#</th><th>Nama Lengkap</th><th>Email</th><th>Password</th><th>NISN</th><th></th></tr>
+              </thead>
+              <tbody id="previewBody"></tbody>
+            </table>
+          </div>
+          <div class="d-flex justify-content-between mt-3">
+            <button class="btn btn-sm btn-outline-secondary" id="backToStep1Btn">← Kembali</button>
+            <button class="btn btn-primary" id="doImportBtn">Impor Semua</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Progress & hasil -->
+        <div id="importStep3" style="display:none;">
+          <div class="progress mb-3" style="height:22px;">
+            <div class="progress-bar bg-success" id="importProgress" style="width:0%; transition:width .3s;">0%</div>
+          </div>
+          <div id="importLog" style="max-height:280px; overflow-y:auto; font-size:0.82rem;"></div>
+          <button class="btn btn-secondary mt-3" id="importDoneBtn" style="display:none;" data-bs-dismiss="modal">Selesai</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/navbar.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  const newlyCreated = [];
+  let parsedRows = [];      // baris CSV setelah di-parse
+  let importClassId = '';
+  let importClassName = '';
+  let importModal;
+
+  (async function init() {
+    const user = await requireLogin();
+    if (!user) return;
+    renderNavbar('students');
+
+    const classes = await callApi('listClasses', { token: getSessionToken() });
+    if (!classes.length) {
+      document.getElementById('rosterBody').innerHTML =
+        '<tr><td colspan="5" class="text-warning text-center py-4">Belum ada kelas. Buat kelas dulu di <a href="content-manager.html">Materi & Tugas → tab Kelas</a>.</td></tr>';
+      return;
+    }
+
+    // Isi dropdown kelas (roster & import)
+    const sel  = document.getElementById('classSelect');
+    const iSel = document.getElementById('importClassSelect');
+    const opts = classes.map(c => `<option value="${c.classId}">${c.className}</option>`).join('');
+    sel.innerHTML  = opts;
+    iSel.innerHTML = opts;
+
+    sel.addEventListener('change', loadRoster);
+    document.getElementById('addStudentBtn').addEventListener('click', () => addStudentDialog(classes));
+    document.getElementById('printBtn').addEventListener('click', printCredentials);
+
+    // ── Import CSV ──
+    importModal = new bootstrap.Modal(document.getElementById('importModal'));
+    document.getElementById('importBtn').addEventListener('click', () => {
+      resetImportModal();
+      importModal.show();
+    });
+
+    document.getElementById('csvFileInput').addEventListener('change', e => {
+      document.getElementById('parseCSVBtn').disabled = !e.target.files.length;
+    });
+
+    document.getElementById('parseCSVBtn').addEventListener('click', parseCSV);
+    document.getElementById('backToStep1Btn').addEventListener('click', () => {
+      document.getElementById('importStep2').style.display = 'none';
+      document.getElementById('importStep1').style.display = 'block';
+    });
+    document.getElementById('doImportBtn').addEventListener('click', runImport);
+
+    document.getElementById('downloadTemplateBtn').addEventListener('click', e => {
+      e.preventDefault();
+      const csv = 'nama_lengkap,email,password,nisn\nBudi Santoso,budi@sekolah.sch.id,,12345678\nSiti Rahayu,siti@sekolah.sch.id,siti123,87654321';
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a    = document.createElement('a');
+      a.href     = URL.createObjectURL(blob);
+      a.download = 'template-import-siswa.csv';
+      a.click();
+    });
+
+    // Sinkronkan importClassSelect dengan classSelect
+    document.getElementById('importClassSelect').addEventListener('change', e => {
+      sel.value = e.target.value;
+    });
+
+    loadRoster();
+  })();
+
+  function resetImportModal() {
+    parsedRows = [];
+    document.getElementById('importStep1').style.display = 'block';
+    document.getElementById('importStep2').style.display = 'none';
+    document.getElementById('importStep3').style.display = 'none';
+    document.getElementById('importDoneBtn').style.display = 'none';
+    document.getElementById('csvFileInput').value = '';
+    document.getElementById('parseCSVBtn').disabled = true;
+    document.getElementById('importLog').innerHTML = '';
+    // Sinkronkan ke kelas yang aktif
+    const cur = document.getElementById('classSelect').value;
+    if (cur) document.getElementById('importClassSelect').value = cur;
+  }
+
+  function parseCSV() {
+    const file = document.getElementById('csvFileInput').files[0];
+    if (!file) return;
+
+    importClassId   = document.getElementById('importClassSelect').value;
+    importClassName = document.getElementById('importClassSelect').selectedOptions[0].text;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: h => h.trim().toLowerCase().replace(/\s+/g, '_'),
+      complete: result => {
+        if (!result.data.length) {
+          Swal.fire('File Kosong', 'Tidak ada baris data di file CSV.', 'warning');
+          return;
+        }
+
+        // Validasi header minimal
+        const keys = Object.keys(result.data[0]);
+        if (!keys.includes('nama_lengkap') || !keys.includes('email')) {
+          Swal.fire('Format Salah', 'CSV harus memiliki kolom <code>nama_lengkap</code> dan <code>email</code>.', 'error');
+          return;
+        }
+
+        parsedRows = result.data.map((row, i) => {
+          const nama = (row.nama_lengkap || '').trim();
+          const email = (row.email || '').trim().toLowerCase();
+          // Auto-generate password: namaDepan + 3 angka acak
+          const pwd = (row.password || '').trim() ||
+            (nama.split(' ')[0].toLowerCase() + Math.floor(100 + Math.random() * 900));
+          return { no: i + 1, nama, email, password: pwd, nisn: (row.nisn || '').trim() };
+        }).filter(r => r.nama && r.email); // buang baris yang nama/email kosong
+
+        if (!parsedRows.length) {
+          Swal.fire('Tidak Ada Data Valid', 'Pastikan kolom nama_lengkap dan email terisi.', 'warning');
+          return;
+        }
+
+        // Tampilkan preview
+        document.getElementById('previewCount').textContent = parsedRows.length;
+        document.getElementById('previewClass').textContent  = importClassName;
+        document.getElementById('previewBody').innerHTML = parsedRows.map(r => `
+          <tr>
+            <td>${r.no}</td>
+            <td><input class="form-control form-control-sm" value="${r.nama}"
+                 onchange="parsedRows[${r.no-1}].nama=this.value"></td>
+            <td><input class="form-control form-control-sm" type="email" value="${r.email}"
+                 onchange="parsedRows[${r.no-1}].email=this.value"></td>
+            <td><input class="form-control form-control-sm" value="${r.password}"
+                 onchange="parsedRows[${r.no-1}].password=this.value"></td>
+            <td><input class="form-control form-control-sm" value="${r.nisn}"
+                 onchange="parsedRows[${r.no-1}].nisn=this.value"></td>
+            <td><button class="btn btn-sm btn-outline-danger" onclick="parsedRows.splice(${r.no-1},1);parseCSV()">✕</button></td>
+          </tr>
+        `).join('');
+
+        document.getElementById('importStep1').style.display = 'none';
+        document.getElementById('importStep2').style.display = 'block';
+      },
+      error: err => Swal.fire('Gagal Membaca File', err.message, 'error')
+    });
+  }
+
+  async function runImport() {
+    if (!parsedRows.length) return;
+
+    document.getElementById('importStep2').style.display = 'none';
+    document.getElementById('importStep3').style.display = 'block';
+
+    const log      = document.getElementById('importLog');
+    const bar      = document.getElementById('importProgress');
+    const total    = parsedRows.length;
+    let sukses = 0, gagal = 0;
+
+    for (let i = 0; i < total; i++) {
+      const r = parsedRows[i];
+      const pct = Math.round(((i + 1) / total) * 100);
+      bar.style.width = pct + '%';
+      bar.textContent = pct + '%';
+
+      try {
+        const result = await callApi('createStudentByTeacher', {
+          token:    getSessionToken(),
+          fullName: r.nama,
+          email:    r.email,
+          password: r.password,
+          classId:  importClassId,
+          nisn:     r.nisn
+        });
+
+        newlyCreated.push({ fullName: result.fullName, email: r.email, password: r.password, className: importClassName });
+        sukses++;
+        log.innerHTML += `<div class="text-success">✓ ${r.nama} (${r.email})</div>`;
+      } catch (err) {
+        gagal++;
+        log.innerHTML += `<div class="text-danger">✗ ${r.nama} (${r.email}) — ${err.message}</div>`;
+      }
+      log.scrollTop = log.scrollHeight;
+      // Jeda singkat agar Apps Script tidak throttle
+      await new Promise(res => setTimeout(res, 300));
+    }
+
+    log.innerHTML += `<hr><div class="fw-semibold">Selesai: <span class="text-success">${sukses} berhasil</span>, <span class="text-danger">${gagal} gagal</span>.</div>`;
+    document.getElementById('importDoneBtn').style.display = 'inline-block';
+
+    // Refresh roster
+    document.getElementById('classSelect').value = importClassId;
+    loadRoster();
+  }
+
+  // ── Roster ─────────────────────────────────────────────────────────────────
+  async function loadRoster() {
+    const classId = document.getElementById('classSelect').value;
+    if (!classId) return;
+
+    document.getElementById('rosterBody').innerHTML =
+      '<tr><td colspan="5" class="text-muted text-center py-3">Memuat...</td></tr>';
+
+    try {
+      const roster = await callApi('listStudentsByClass', { token: getSessionToken(), classId });
+
+      if (!roster.length) {
+        document.getElementById('rosterBody').innerHTML =
+          '<tr><td colspan="5" class="text-muted text-center py-4">Belum ada siswa di kelas ini.</td></tr>';
+        return;
+      }
+
+      document.getElementById('rosterBody').innerHTML = roster.map(s => `
+        <tr>
+          <td><div class="fw-semibold">${s.fullName}</div></td>
+          <td class="text-muted small">${s.email}</td>
+          <td class="text-muted small">${s.nisn || '-'}</td>
+          <td><span class="badge ${s.status === 'active' ? 'bg-success' : 'bg-secondary'}">
+            ${s.status === 'active' ? 'Aktif' : s.status}</span></td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-danger"
+              onclick="removeStudentConfirm('${s.userId}', '${s.fullName.replace(/'/g,"\\'")}')">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      Swal.fire('Gagal memuat', err.message, 'error');
+    }
+  }
+
+  // ── Tambah satu siswa ───────────────────────────────────────────────────────
+  async function addStudentDialog(classes) {
+    const classOptions  = classes.map(c => `<option value="${c.classId}">${c.className}</option>`).join('');
+    const currentClassId = document.getElementById('classSelect').value;
+
+    const { value } = await Swal.fire({
+      title: 'Tambah Siswa Baru', width: 480,
+      html: `
+        <div class="text-start">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Nama Lengkap <span class="text-danger">*</span></label>
+            <input id="swName" class="form-control" placeholder="mis. Budi Santoso">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Email <span class="text-danger">*</span></label>
+            <input id="swEmail" type="email" class="form-control" placeholder="mis. budi@sekolah.sch.id">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Password Sementara <span class="text-danger">*</span></label>
+            <input id="swPassword" type="text" class="form-control" placeholder="min. 6 karakter">
+            <div class="form-text">Catat dan berikan ke siswa secara langsung.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">NISN <span class="text-muted fw-normal">(opsional)</span></label>
+            <input id="swNisn" class="form-control" placeholder="Nomor Induk Siswa Nasional">
+          </div>
+          <div class="mb-0">
+            <label class="form-label small fw-semibold">Kelas <span class="text-danger">*</span></label>
+            <select id="swClass" class="form-select">${classOptions}</select>
+          </div>
+        </div>`,
+      didOpen: () => { document.getElementById('swClass').value = currentClassId; },
+      showCancelButton: true, confirmButtonText: 'Tambahkan', cancelButtonText: 'Batal',
+      focusConfirm: false,
+      preConfirm: () => {
+        const name     = document.getElementById('swName').value.trim();
+        const email    = document.getElementById('swEmail').value.trim();
+        const password = document.getElementById('swPassword').value.trim();
+        const classId  = document.getElementById('swClass').value;
+        const nisn     = document.getElementById('swNisn').value.trim();
+        if (!name)            { Swal.showValidationMessage('Nama lengkap wajib diisi'); return false; }
+        if (!email)           { Swal.showValidationMessage('Email wajib diisi'); return false; }
+        if (!password)        { Swal.showValidationMessage('Password wajib diisi'); return false; }
+        if (password.length < 6) { Swal.showValidationMessage('Password minimal 6 karakter'); return false; }
+        if (!classId)         { Swal.showValidationMessage('Pilih kelas'); return false; }
+        return { fullName: name, email, password, classId, nisn };
+      }
+    });
+    if (!value) return;
+
+    try {
+      const result = await callApi('createStudentByTeacher', { token: getSessionToken(), ...value });
+      newlyCreated.push({ fullName: result.fullName, email: result.email, password: value.password, className: result.className });
+
+      await Swal.fire({
+        icon: 'success', title: 'Siswa Berhasil Ditambahkan!',
+        html: `<div class="alert alert-info text-start small">
+          <strong>Email:</strong> ${result.email}<br>
+          <strong>Password:</strong> ${value.password}<br>
+          <strong>Kelas:</strong> ${result.className}</div>`,
+        confirmButtonText: '+ Tambah Lagi',
+        showDenyButton: true, denyButtonText: 'Selesai', denyButtonColor: '#6c757d'
+      }).then(res => { if (res.isConfirmed) addStudentDialog(classes); });
+
+      document.getElementById('classSelect').value = value.classId;
+      loadRoster();
+    } catch (err) {
+      Swal.fire('Gagal menambahkan', err.message, 'error');
+    }
+  }
+
+  // ── Hapus siswa ─────────────────────────────────────────────────────────────
+  async function removeStudentConfirm(userId, fullName) {
+    const { isConfirmed } = await Swal.fire({
+      title: `Hapus ${fullName}?`,
+      text: 'Akun akan dihapus permanen. Data nilai dan sertifikat tetap tersimpan.',
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Hapus', cancelButtonText: 'Batal', confirmButtonColor: '#dc3545'
+    });
+    if (!isConfirmed) return;
+    try {
+      await callApi('deleteUser', { token: getSessionToken(), userId });
+      loadRoster();
+    } catch (err) {
+      Swal.fire('Gagal menghapus', err.message, 'error');
+    }
+  }
+
+  // ── Cetak daftar password ───────────────────────────────────────────────────
+  function printCredentials() {
+    if (!newlyCreated.length) {
+      Swal.fire('Belum ada data untuk dicetak',
+        'Tambahkan atau import siswa baru terlebih dahulu. Daftar password hanya tersedia untuk siswa yang ditambahkan pada sesi ini.',
+        'info');
+      return;
+    }
+    const rows = newlyCreated.map((s, i) => `<tr>
+      <td>${i + 1}</td><td>${s.fullName}</td><td>${s.className}</td>
+      <td>${s.email}</td><td><strong>${s.password}</strong></td>
+    </tr>`).join('');
+
+    const w = window.open('', '_blank');
+    w.document.write(`<!DOCTYPE html><html><head><title>Daftar Password Siswa</title>
+      <style>body{font-family:Arial;font-size:12px;margin:20px}h2{font-size:16px}
+      table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:8px 12px;text-align:left}
+      th{background:#f4f4f4}@media print{button{display:none}}</style></head><body>
+      <h2>Daftar Akun Siswa — English Academy Indonesia</h2>
+      <p>Dicetak: ${new Date().toLocaleString('id-ID')} | Dijaga kerahasiaannya.</p>
+      <table><thead><tr><th>No</th><th>Nama</th><th>Kelas</th><th>Email</th><th>Password Awal</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+      <p style="margin-top:16px">Siswa dapat mengganti password melalui menu <strong>Profil → Ganti Password</strong>.</p>
+      <button onclick="window.print()" style="margin-top:12px;padding:8px 16px">🖨 Cetak</button>
+    </body></html>`);
+    w.document.close();
+  }
+</script>
+
+  (async function init() {
+    const user = await requireLogin();
+    if (!user) return;
+    renderNavbar('students');
+
+    const classes = await callApi('listClasses', { token: getSessionToken() });
+    if (!classes.length) {
+      document.getElementById('rosterBody').innerHTML =
+        '<tr><td colspan="5" class="text-warning text-center py-4">Belum ada kelas. Buat kelas dulu di <a href="content-manager.html">Materi & Tugas → tab Kelas</a>.</td></tr>';
+      return;
+    }
+
+    const sel = document.getElementById('classSelect');
+    sel.innerHTML = classes.map(c => `<option value="${c.classId}">${c.className}</option>`).join('');
+    sel.addEventListener('change', loadRoster);
+
+    document.getElementById('addStudentBtn').addEventListener('click', () => addStudentDialog(classes));
+    document.getElementById('printBtn').addEventListener('click', printCredentials);
+
+    loadRoster();
+  })();
+
+</body>
+</html>

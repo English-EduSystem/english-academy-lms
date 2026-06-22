@@ -18,12 +18,14 @@ const NAV_LINKS = {
   ],
   teacher: [
     { key: 'dashboard', label: 'Dashboard', href: 'dashboard-teacher.html' },
+    { key: 'students', label: 'Data Siswa', href: 'students.html' },
     { key: 'content-manager', label: 'Materi & Tugas', href: 'content-manager.html' },
     { key: 'gradebook', label: 'Penilaian', href: 'gradebook.html' },
     { key: 'attendance', label: 'Kehadiran', href: 'attendance.html' }
   ],
   admin: [
     { key: 'dashboard', label: 'Dashboard', href: 'dashboard-admin.html' },
+    { key: 'students', label: 'Data Siswa', href: 'students.html' },
     { key: 'user-management', label: 'Pengguna', href: 'user-management.html' },
     { key: 'content-manager', label: 'Materi & Tugas', href: 'content-manager.html' },
     { key: 'analytics', label: 'Analitik', href: 'analytics.html' },

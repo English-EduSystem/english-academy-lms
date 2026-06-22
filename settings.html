@@ -29,6 +29,11 @@
       <label class="form-label small fw-semibold">Kontak Admin</label>
       <input type="text" class="form-control" id="settingAdminContact" placeholder="mis. admin@sekolah.sch.id">
     </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">URL Aplikasi (GitHub Pages)</label>
+      <input type="text" class="form-control" id="settingFrontendUrl" placeholder="mis. https://username.github.io/english-academy">
+      <div class="form-text">Digunakan di link email reset password siswa.</div>
+    </div>
     <button class="btn btn-primary" id="saveBtn">Simpan Pengaturan</button>
   </div>
 </div>
@@ -39,9 +44,10 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
   const FIELD_MAP = {
-    schoolName: 'settingSchoolName',
-    academicYear: 'settingAcademicYear',
-    adminContact: 'settingAdminContact'
+    schoolName:    'settingSchoolName',
+    academicYear:  'settingAcademicYear',
+    adminContact:  'settingAdminContact',
+    frontendUrl:   'settingFrontendUrl'
   };
 
   (async function init() {
