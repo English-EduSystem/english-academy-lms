@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Profil Saya — English Academy Indonesia</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app-navbar"></div>
+
+<div class="container pb-5" style="max-width: 600px;">
+  <h5 class="fw-bold mb-3">👤 Profil Saya</h5>
+
+  <div class="card p-4 mb-3">
+    <h6 class="fw-bold mb-3">Informasi Dasar</h6>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Nama Lengkap</label>
+      <input type="text" class="form-control" id="fullName">
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Email</label>
+      <input type="text" class="form-control" id="email" disabled>
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">No. HP</label>
+      <input type="text" class="form-control" id="phone">
+    </div>
+
+    <div id="studentFields" style="display:none;">
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Tanggal Lahir</label>
+        <input type="date" class="form-control" id="dateOfBirth">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Nama Orang Tua/Wali</label>
+        <input type="text" class="form-control" id="parentName">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">No. HP Orang Tua/Wali</label>
+        <input type="text" class="form-control" id="parentPhone">
+      </div>
+    </div>
+
+    <div id="teacherFields" style="display:none;">
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">NIP</label>
+        <input type="text" class="form-control" id="nip">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Mata Pelajaran yang Diampu</label>
+        <input type="text" class="form-control" id="subjectsTaught">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Bio Singkat</label>
+        <textarea class="form-control" id="bio" rows="3"></textarea>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="saveProfileBtn">Simpan Perubahan</button>
+  </div>
+
+  <div class="card p-4">
+    <h6 class="fw-bold mb-3">Ganti Password</h6>
+    <div class="mb-3">
+      <input type="password" class="form-control" id="oldPassword" placeholder="Password saat ini">
+    </div>
+    <div class="mb-3">
+      <input type="password" class="form-control" id="newPassword" placeholder="Password baru (min. 8 karakter)">
+    </div>
+    <button class="btn btn-secondary" id="changePasswordBtn">Ganti Password</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/navbar.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  let currentRole = null;
+
+  (async function init() {
+    const user = await requireLogin();
+    if (!user) return;
+    renderNavbar('profile');
+    currentRole = user.role;
+
+    try {
+      const profile = await callApi('getMyProfile', { token: getSessionToken() });
+      document.getElementById('fullName').value = profile.fullName || '';
+      document.getElementById('email').value = profile.email || '';
+      document.getElementById('phone').value = profile.phone || '';
+
+      if (currentRole === 'student') {
+        document.getElementById('studentFields').style.display = 'block';
+        document.getElementById('dateOfBirth').value = profile.dateOfBirth || '';
+        document.getElementById('parentName').value = profile.parentName || '';
+        document.getElementById('parentPhone').value = profile.parentPhone || '';
+      } else if (currentRole === 'teacher') {
+        document.getElementById('teacherFields').style.display = 'block';
+        document.getElementById('nip').value = profile.nip || '';
+        document.getElementById('subjectsTaught').value = profile.subjectsTaught || '';
+        document.getElementById('bio').value = profile.bio || '';
+      }
+    } catch (err) {
+      Swal.fire('Gagal memuat profil', err.message, 'error');
+    }
+  })();
+
+  document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+    try {
+      await callApi('updateMyProfile', {
+        token: getSessionToken(),
+        fullName: document.getElementById('fullName').value,
+        phone: document.getElementById('phone').value
+      });
+
+      if (currentRole === 'student') {
+        await callApi('updateMyStudentProfile', {
+          token: getSessionToken(),
+          dateOfBirth: document.getElementById('dateOfBirth').value,
+          parentName: document.getElementById('parentName').value,
+          parentPhone: document.getElementById('parentPhone').value
+        });
+      } else if (currentRole === 'teacher') {
+        await callApi('updateMyTeacherProfile', {
+          token: getSessionToken(),
+          nip: document.getElementById('nip').value,
+          subjectsTaught: document.getElementById('subjectsTaught').value,
+          bio: document.getElementById('bio').value
+        });
+      }
+
+      const user = getCurrentUser();
+      user.fullName = document.getElementById('fullName').value;
+      saveSession(getSessionToken(), user);
+
+      Swal.fire({ icon: 'success', title: 'Profil tersimpan', timer: 1200, showConfirmButton: false });
+    } catch (err) {
+      Swal.fire('Gagal menyimpan', err.message, 'error');
+    }
+  });
+
+  document.getElementById('changePasswordBtn').addEventListener('click', async () => {
+    const oldPassword = document.getElementById('oldPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    if (!oldPassword || !newPassword) return;
+
+    try {
+      await callApi('changeMyPassword', { token: getSessionToken(), oldPassword, newPassword });
+      document.getElementById('oldPassword').value = '';
+      document.getElementById('newPassword').value = '';
+      Swal.fire('Password diganti!', 'Gunakan password baru saat login berikutnya.', 'success');
+    } catch (err) {
+      Swal.fire('Gagal mengganti password', err.message, 'error');
+    }
+  });
+</script>
+
+</body>
+</html>

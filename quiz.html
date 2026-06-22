@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kuis — English Academy Indonesia</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app-navbar"></div>
+
+<div class="container pb-5" style="max-width: 800px;">
+
+  <!-- ====== DAFTAR KUIS ====== -->
+  <div id="quizListView">
+    <h5 class="fw-bold mb-3">Kuis Tersedia</h5>
+    <div id="quizList" class="row g-3"></div>
+  </div>
+
+  <!-- ====== MENGERJAKAN KUIS ====== -->
+  <div id="quizAttemptView" style="display:none;">
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0" id="quizTitle"></h5>
+        <span class="badge bg-primary fs-6" id="quizTimer" style="display:none;"></span>
+      </div>
+      <div id="questionsContainer"></div>
+      <button class="btn btn-primary mt-3" id="submitQuizBtn">Kumpulkan Jawaban</button>
+    </div>
+  </div>
+
+  <!-- ====== HASIL ====== -->
+  <div id="quizResultView" style="display:none;">
+    <div class="card p-4 text-center">
+      <div class="fs-1 mb-2">🎉</div>
+      <h5 class="fw-bold" id="resultTitle"></h5>
+      <p class="text-muted" id="resultDetail"></p>
+      <a href="lessons.html" class="btn btn-primary mt-2">Kembali ke Materi</a>
+    </div>
+    <div class="card p-4 mt-3">
+      <h6 class="fw-bold mb-3">🏆 Papan Peringkat</h6>
+      <ol id="leaderboardList" class="mb-0"></ol>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/navbar.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  let timerInterval = null;
+  let currentAttemptId = params.get('attemptId');
+  let currentQuizId = params.get('quizId');
+
+  (async function init() {
+    const user = await requireLogin();
+    if (!user) return;
+    renderNavbar('lessons');
+
+    if (currentQuizId && currentAttemptId) {
+      await loadQuizAttempt();
+    } else {
+      await loadQuizList();
+    }
+  })();
+
+  async function loadQuizList() {
+    const subjectId = params.get('subjectId');
+    if (!subjectId) { Swal.fire('Mata pelajaran tidak diketahui', '', 'error'); return; }
+
+    try {
+      let quizzes = await callApi('listQuizzesBySubject', { token: getSessionToken(), subjectId });
+      const moduleId = params.get('moduleId');
+      if (moduleId) quizzes = quizzes.filter(q => !q.moduleId || q.moduleId === moduleId);
+
+      document.getElementById('quizList').innerHTML = quizzes.map(q => `
+        <div class="col-12">
+          <div class="card p-3 d-flex flex-row justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold">${q.title}</div>
+              <div class="text-muted small">${q.timeLimitMinutes > 0 ? q.timeLimitMinutes + ' menit' : 'Tanpa batas waktu'} · Nilai lulus ${q.passingScore}%</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="startQuiz('${q.quizId}')">Mulai</button>
+          </div>
+        </div>
+      `).join('') || '<p class="text-muted">Belum ada kuis untuk modul ini.</p>';
+    } catch (err) {
+      Swal.fire('Gagal memuat', err.message, 'error');
+    }
+  }
+
+  async function startQuiz(quizId) {
+    try {
+      const { attemptId } = await callApi('startQuizAttempt', { token: getSessionToken(), quizId });
+      window.location.href = `quiz.html?quizId=${quizId}&attemptId=${attemptId}`;
+    } catch (err) {
+      Swal.fire('Tidak bisa memulai kuis', err.message, 'error');
+    }
+  }
+
+  async function loadQuizAttempt() {
+    document.getElementById('quizListView').style.display = 'none';
+    document.getElementById('quizAttemptView').style.display = 'block';
+
+    try {
+      const { quiz, questions } = await callApi('getQuizForAttempt', { token: getSessionToken(), quizId: currentQuizId });
+      document.getElementById('quizTitle').textContent = quiz.title;
+      document.getElementById('questionsContainer').innerHTML = questions.map((q, i) => renderQuestion(q, i)).join('');
+
+      if (Number(quiz.timeLimitMinutes) > 0) startTimer(Number(quiz.timeLimitMinutes) * 60);
+
+      document.getElementById('submitQuizBtn').addEventListener('click', () => submitQuiz(questions));
+    } catch (err) {
+      Swal.fire('Gagal memuat kuis', err.message, 'error');
+    }
+  }
+
+  function renderQuestion(q, index) {
+    let inputHtml = '';
+    switch (q.questionType) {
+      case 'multiple_choice':
+      case 'true_false':
+        inputHtml = q.options.map(o => `
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="q_${q.questionId}" value="${o.optionLabel}">
+            <label class="form-check-label">${o.optionLabel}. ${o.optionText}</label>
+          </div>`).join('');
+        break;
+      case 'multiple_answer':
+        inputHtml = q.options.map(o => `
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" data-group="q_${q.questionId}" value="${o.optionLabel}">
+            <label class="form-check-label">${o.optionLabel}. ${o.optionText}</label>
+          </div>`).join('');
+        break;
+      case 'fill_blank':
+        inputHtml = `<input type="text" class="form-control" data-fill="q_${q.questionId}" placeholder="Ketik jawaban...">`;
+        break;
+      case 'matching':
+        inputHtml = q.options.map(o => `
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-light text-dark border" style="min-width:120px;">${o.optionText}</span>
+            <input type="text" class="form-control form-control-sm" data-match="q_${q.questionId}" data-key="${o.optionLabel}" placeholder="Jawaban pasangan...">
+          </div>`).join('');
+        break;
+      case 'essay':
+        inputHtml = `<textarea class="form-control" rows="4" data-essay="q_${q.questionId}" placeholder="Tulis jawaban Anda..."></textarea>`;
+        break;
+    }
+    return `
+      <div class="mb-4 pb-3 border-bottom">
+        <div class="fw-semibold mb-2">${index + 1}. ${q.questionText} <span class="text-muted small">(${q.points} poin)</span></div>
+        ${inputHtml}
+      </div>`;
+  }
+
+  function collectResponses(questions) {
+    const responses = {};
+    questions.forEach(q => {
+      const key = 'q_' + q.questionId;
+      switch (q.questionType) {
+        case 'multiple_choice':
+        case 'true_false': {
+          const checked = document.querySelector(`input[name="${key}"]:checked`);
+          if (checked) responses[q.questionId] = checked.value;
+          break;
+        }
+        case 'multiple_answer': {
+          const checked = Array.from(document.querySelectorAll(`input[data-group="${key}"]:checked`)).map(el => el.value);
+          if (checked.length) responses[q.questionId] = checked;
+          break;
+        }
+        case 'fill_blank': {
+          const el = document.querySelector(`input[data-fill="${key}"]`);
+          if (el && el.value.trim()) responses[q.questionId] = el.value.trim();
+          break;
+        }
+        case 'matching': {
+          const inputs = document.querySelectorAll(`input[data-match="${key}"]`);
+          const pairs = {};
+          inputs.forEach(el => { if (el.value.trim()) pairs[el.dataset.key] = el.value.trim(); });
+          if (Object.keys(pairs).length) responses[q.questionId] = pairs;
+          break;
+        }
+        case 'essay': {
+          const el = document.querySelector(`textarea[data-essay="${key}"]`);
+          if (el && el.value.trim()) responses[q.questionId] = el.value.trim();
+          break;
+        }
+      }
+    });
+    return responses;
+  }
+
+  async function submitQuiz(questions) {
+    if (timerInterval) clearInterval(timerInterval);
+    const responses = collectResponses(questions);
+
+    try {
+      const result = await callApi('submitQuizAttempt', { token: getSessionToken(), attemptId: currentAttemptId, responses });
+      showResult(result);
+    } catch (err) {
+      Swal.fire('Gagal mengumpulkan', err.message, 'error');
+    }
+  }
+
+  async function showResult(result) {
+    document.getElementById('quizAttemptView').style.display = 'none';
+    document.getElementById('quizResultView').style.display = 'block';
+
+    if (result.needsReview) {
+      document.getElementById('resultTitle').textContent = 'Jawaban Terkumpul';
+      document.getElementById('resultDetail').textContent = 'Kuis ini berisi soal esai — menunggu penilaian guru.';
+    } else {
+      const percent = result.maxPoints > 0 ? Math.round((result.earnedPoints / result.maxPoints) * 100) : 0;
+      document.getElementById('resultTitle').textContent = `Nilai Kamu: ${percent}`;
+      document.getElementById('resultDetail').textContent = `${result.earnedPoints} dari ${result.maxPoints} poin`;
+    }
+
+    try {
+      const leaderboard = await callApi('getQuizLeaderboard', { token: getSessionToken(), quizId: currentQuizId });
+      document.getElementById('leaderboardList').innerHTML = leaderboard.map(row =>
+        `<li class="mb-1">${row.studentName} — <strong>${row.score}</strong></li>`
+      ).join('') || '<li class="text-muted">Belum ada data peringkat.</li>';
+    } catch (e) { /* leaderboard is non-critical */ }
+  }
+
+  function startTimer(totalSeconds) {
+    let remaining = totalSeconds;
+    const el = document.getElementById('quizTimer');
+    el.style.display = 'inline-block';
+    timerInterval = setInterval(() => {
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      el.textContent = `${m}:${String(s).padStart(2, '0')}`;
+      if (remaining <= 0) {
+        clearInterval(timerInterval);
+        Swal.fire('Waktu habis!', 'Jawaban Anda akan dikumpulkan otomatis.', 'info');
+        document.getElementById('submitQuizBtn').click();
+      }
+      remaining--;
+    }, 1000);
+  }
+</script>
+
+</body>
+</html>

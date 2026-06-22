@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Materi & Tugas — English Academy Indonesia</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app-navbar"></div>
+
+<div class="container pb-5">
+  <h5 class="fw-bold mb-3">📚 Materi & Tugas</h5>
+
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><button class="nav-link active" data-tab="modules">Modul & Pelajaran</button></li>
+    <li class="nav-item"><button class="nav-link" data-tab="quiz">Kuis</button></li>
+    <li class="nav-item"><button class="nav-link" data-tab="exam">Ujian</button></li>
+    <li class="nav-item"><button class="nav-link" data-tab="assignment">Tugas</button></li>
+    <li class="nav-item" id="classesTabNav" style="display:none;"><button class="nav-link" data-tab="classes">Kelas</button></li>
+  </ul>
+
+  <!-- ===================== TAB: MODULES & LESSONS ===================== -->
+  <div class="tab-pane" id="tab-modules">
+    <div class="d-flex gap-2 align-items-center mb-3">
+      <select class="form-select w-auto" id="moduleSubjectSelect"></select>
+      <button class="btn btn-sm btn-primary" id="newModuleBtn">+ Modul Baru</button>
+    </div>
+    <div id="modulesContainer"></div>
+  </div>
+
+  <!-- ===================== TAB: QUIZ ===================== -->
+  <div class="tab-pane" id="tab-quiz" style="display:none;">
+    <div class="d-flex gap-2 align-items-center mb-3">
+      <select class="form-select w-auto" id="quizSubjectSelect"></select>
+      <button class="btn btn-sm btn-primary" id="newQuizBtn">+ Kuis Baru</button>
+    </div>
+    <div id="quizzesContainer"></div>
+  </div>
+
+  <!-- ===================== TAB: EXAM ===================== -->
+  <div class="tab-pane" id="tab-exam" style="display:none;">
+    <div class="d-flex gap-2 align-items-center mb-3">
+      <select class="form-select w-auto" id="examClassSelect"></select>
+      <button class="btn btn-sm btn-primary" id="newExamBtn">+ Ujian Baru</button>
+    </div>
+    <div id="examsContainer"></div>
+  </div>
+
+  <!-- ===================== TAB: ASSIGNMENT ===================== -->
+  <div class="tab-pane" id="tab-assignment" style="display:none;">
+    <div class="d-flex gap-2 align-items-center mb-3">
+      <select class="form-select w-auto" id="assignmentClassSelect"></select>
+      <button class="btn btn-sm btn-primary" id="newAssignmentBtn">+ Tugas Baru</button>
+    </div>
+    <div id="assignmentsContainer"></div>
+  </div>
+
+  <!-- ===================== TAB: CLASSES (admin only) ===================== -->
+  <div class="tab-pane" id="tab-classes" style="display:none;">
+    <button class="btn btn-sm btn-primary mb-3" id="newClassBtn">+ Kelas Baru</button>
+    <div id="classesContainer" class="row g-3"></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/navbar.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  let subjects = [];
+  let classes = [];
+
+  (async function init() {
+    const user = await requireLogin();
+    if (!user) return;
+    renderNavbar('content-manager');
+
+    document.querySelectorAll('[data-tab]').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    subjects = await callApi('listSubjects', { token: getSessionToken() });
+    classes = await callApi('listClasses', { token: getSessionToken() });
+
+    fillSelect('moduleSubjectSelect', subjects, 'subjectId', 'subjectName');
+    fillSelect('quizSubjectSelect', subjects, 'subjectId', 'subjectName');
+    fillSelect('examClassSelect', classes, 'classId', 'className');
+    fillSelect('assignmentClassSelect', classes, 'classId', 'className');
+
+    document.getElementById('moduleSubjectSelect').addEventListener('change', loadModules);
+    document.getElementById('quizSubjectSelect').addEventListener('change', loadQuizzes);
+    document.getElementById('examClassSelect').addEventListener('change', loadExams);
+    document.getElementById('assignmentClassSelect').addEventListener('change', loadAssignments);
+
+    document.getElementById('newModuleBtn').addEventListener('click', createModuleDialog);
+    document.getElementById('newQuizBtn').addEventListener('click', createQuizDialog);
+    document.getElementById('newExamBtn').addEventListener('click', createExamDialog);
+    document.getElementById('newAssignmentBtn').addEventListener('click', createAssignmentDialog);
+
+    if (user.role === 'admin') {
+      document.getElementById('classesTabNav').style.display = 'block';
+      document.getElementById('newClassBtn').addEventListener('click', createClassDialog);
+      loadClasses();
+    }
+
+    if (subjects.length) loadModules();
+    if (subjects.length) loadQuizzes();
+    if (classes.length) loadExams();
+    if (classes.length) loadAssignments();
+  })();
+
+  function switchTab(tab) {
+    document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.tab-pane').forEach(p => p.style.display = p.id === 'tab-' + tab ? 'block' : 'none');
+  }
+
+  function fillSelect(elId, items, valueKey, labelKey) {
+    document.getElementById(elId).innerHTML = items.map(i => `<option value="${i[valueKey]}">${i[labelKey]}</option>`).join('');
+  }
+
+  // ============================================================
+  // MODULES & LESSONS
+  // ============================================================
+
+  async function loadModules() {
+    const subjectId = document.getElementById('moduleSubjectSelect').value;
+    if (!subjectId) return;
+    const modules = await callApi('listModules', { token: getSessionToken(), subjectId });
+
+    document.getElementById('modulesContainer').innerHTML = modules.map(m => `
+      <div class="card p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <strong>${m.title}</strong>
+            <span class="badge ${m.status === 'published' ? 'bg-success' : 'bg-secondary'} ms-2">${m.status}</span>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" onclick="newLessonDialog('${m.moduleId}')">+ Pelajaran</button>
+        </div>
+        <div id="lessons-${m.moduleId}" class="mt-2"></div>
+      </div>
+    `).join('') || '<p class="text-muted">Belum ada modul.</p>';
+
+    modules.forEach(m => loadLessons(m.moduleId));
+  }
+
+  let lessonsCache = {};
+
+  async function loadLessons(moduleId) {
+    const lessons = await callApi('listLessons', { token: getSessionToken(), moduleId });
+    lessons.forEach(l => { lessonsCache[l.lessonId] = l; });
+
+    const el = document.getElementById('lessons-' + moduleId);
+    if (!el) return;
+    el.innerHTML = lessons.map(l => `
+      <div class="d-flex justify-content-between align-items-center border-top py-2 small">
+        <div>${l.title} <span class="badge bg-light text-dark border">${l.contentType}</span></div>
+        <div class="d-flex gap-1">
+          <button class="btn btn-sm btn-outline-secondary" onclick="editLessonDialog('${l.lessonId}', '${moduleId}')">Edit</button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="uploadFileDialog('${l.lessonId}', 'video')">🎬</button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="uploadFileDialog('${l.lessonId}', 'pdf')">📄</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteLesson('${l.lessonId}', '${moduleId}')">Hapus</button>
+        </div>
+      </div>
+    `).join('') || '<div class="text-muted small py-2">Belum ada pelajaran.</div>';
+  }
+
+  async function editLessonDialog(lessonId, moduleId) {
+    const lesson = lessonsCache[lessonId];
+    if (!lesson) return;
+
+    const { value } = await Swal.fire({
+      title: 'Edit Pelajaran',
+      html: `
+        <input id="swTitle" class="swal2-input" placeholder="Judul pelajaran">
+        <textarea id="swBody" class="swal2-textarea" placeholder="Konten"></textarea>`,
+      showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+      didOpen: () => {
+        document.getElementById('swTitle').value = lesson.title;
+        document.getElementById('swBody').value = lesson.bodyHtml || '';
+      },
+      preConfirm: () => ({
+        title: document.getElementById('swTitle').value,
+        bodyHtml: document.getElementById('swBody').value
+      })
+    });
+    if (!value || !value.title) return;
+    await callApi('updateLesson', { token: getSessionToken(), lessonId, ...value });
+    loadLessons(moduleId);
+  }
+
+  async function createModuleDialog() {
+    const subjectId = document.getElementById('moduleSubjectSelect').value;
+    const { value } = await Swal.fire({
+      title: 'Modul Baru',
+      html: `
+        <input id="swTitle" class="swal2-input" placeholder="Judul modul">
+        <textarea id="swDesc" class="swal2-textarea" placeholder="Deskripsi (opsional)"></textarea>`,
+      showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+      preConfirm: () => ({
+        title: document.getElementById('swTitle').value,
+        description: document.getElementById('swDesc').value
+      })
+    });
+    if (!value || !value.title) return;
+    await callApi('createModule', { token: getSessionToken(), subjectId, title: value.title, description: value.description, status: 'published' });
+    loadModules();
+  }
+
+  async function newLessonDialog(moduleId) {
+    const { value } = await Swal.fire({
+      title: 'Pelajaran Baru',
+      html: `
+        <input id="swTitle" class="swal2-input" placeholder="Judul pelajaran">
+        <select id="swType" class="swal2-select form-select">
+          <option value="text">Teks</option><option value="video">Video</option>
+          <option value="pdf">PDF</option><option value="mixed">Campuran</option>
+        </select>
+        <textarea id="swBody" class="swal2-textarea" placeholder="Konten (boleh HTML sederhana)"></textarea>
+        <input id="swDuration" type="number" class="swal2-input" placeholder="Estimasi durasi (menit)">`,
+      showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+      preConfirm: () => ({
+        title: document.getElementById('swTitle').value,
+        contentType: document.getElementById('swType').value,
+        bodyHtml: document.getElementById('swBody').value,
+        durationMinutes: document.getElementById('swDuration').value
+      })
+    });
+    if (!value || !value.title) return;
+    await callApi('createLesson', { token: getSessionToken(), moduleId, ...value, status: 'published' });
+    loadLessons(moduleId);
+  }
+
+  async function deleteLesson(lessonId, moduleId) {
+    const confirm = await Swal.fire({ title: 'Hapus pelajaran ini?', showCancelButton: true, confirmButtonText: 'Hapus', cancelButtonText: 'Batal' });
+    if (!confirm.isConfirmed) return;
+    await callApi('deleteLesson', { token: getSessionToken(), lessonId });
+    loadLessons(moduleId);
+  }
+
+  async function uploadFileDialog(lessonId, kind) {
+    const { value: file } = await Swal.fire({
+      title: kind === 'video' ? 'Unggah Video' : 'Unggah PDF',
+      input: 'file',
+      inputAttributes: { accept: kind === 'video' ? 'video/*' : 'application/pdf' },
+      showCancelButton: true, confirmButtonText: 'Unggah', cancelButtonText: 'Batal'
+    });
+    if (!file) return;
+
+    const base64Data = await fileToBase64(file);
+    const action = kind === 'video' ? 'uploadLessonVideo' : 'uploadLessonPdf';
+    Swal.fire({ title: 'Mengunggah...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+    try {
+      await callApi(action, { token: getSessionToken(), lessonId, title: file.name, base64Data, mimeType: file.type, fileName: file.name });
+      Swal.fire('Berhasil!', '', 'success');
+    } catch (err) {
+      Swal.fire('Gagal mengunggah', err.message, 'error');
+    }
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ============================================================
+  // QUIZ
+  // ============================================================
+
+  async function loadQuizzes() {
+    const subjectId = document.getElementById('quizSubjectSelect').value;
+    if (!subjectId) return;
+    const quizzes = await callApi('listQuizzesBySubject', { token: getSessionToken(), subjectId });
+
+    document.getElementById('quizzesContainer').innerHTML = quizzes.map(q => `
+      <div class="card p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <strong>${q.title}</strong>
+          <button class="btn btn-sm btn-outline-secondary" onclick="addQuestionDialog('${q.quizId}', null)">+ Soal</button>
+        </div>
+        <div id="questions-${q.quizId}" class="mt-2 small"></div>
+      </div>
+    `).join('') || '<p class="text-muted">Belum ada kuis.</p>';
+
+    quizzes.forEach(q => loadQuestions(q.quizId, null));
+  }
+
+  async function loadQuestions(quizId, examId) {
+    const action = examId ? null : 'listQuestionsForEditing';
+    if (!action) return; // exam question listing handled separately below
+    const questions = await callApi(action, { token: getSessionToken(), quizId });
+    const el = document.getElementById('questions-' + quizId);
+    if (!el) return;
+    el.innerHTML = questions.map((q, i) => `<div class="border-top py-1">${i + 1}. ${q.questionText} <span class="text-muted">(${q.questionType}, ${q.points} poin)</span></div>`).join('')
+      || '<div class="text-muted py-1">Belum ada soal.</div>';
+  }
+
+  async function createQuizDialog() {
+    const subjectId = document.getElementById('quizSubjectSelect').value;
+    const { value } = await Swal.fire({
+      title: 'Kuis Baru',
+      html: `
+        <input id="swTitle" class="swal2-input" placeholder="Judul kuis">
+        <input id="swTime" type="number" class="swal2-input" placeholder="Batas waktu (menit, 0 = tanpa batas)">
+        <input id="swAttempts" type="number" class="swal2-input" placeholder="Maks. percobaan (0 = tanpa batas)">
+        <input id="swPassing" type="number" class="swal2-input" placeholder="Nilai lulus (%)" value="70">
+        <label class="d-block mt-2"><input type="checkbox" id="swRandom"> Acak urutan soal</label>`,
+      showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+      preConfirm: () => ({
+        title: document.getElementById('swTitle').value,
+        timeLimitMinutes: document.getElementById('swTime').value,
+        maxAttempts: document.getElementById('swAttempts').value,
+        passingScore: document.getElementById('swPassing').value,
+        randomizeQuestions: document.getElementById('swRandom').checked
+      })
+    });
+    if (!value || !value.title) return;
+    await callApi('createQuiz', { token: getSessionToken(), subjectId, ...value, status: 'published' });
+    loadQuizzes();
+  }
+
+  /** Shared question dialog for both quizzes (examId=null) and exams (quizId=null). */
+  async function addQuestionDialog(quizId, examId) {
+    const { value } = await Swal.fire({
+      title: 'Soal Baru',
+      width: 500,
+      html: `
+        <textarea id="swQText" class="swal2-textarea" placeholder="Teks soal"></textarea>
+        <select id="swQType" class="swal2-select form-select">
+          <option value="multiple_choice">Pilihan Ganda</option>
+          <option value="true_false">Benar/Salah</option>
+          <option value="multiple_answer">Jawaban Ganda</option>
+          <option value="fill_blank">Isian Singkat</option>
+          <option value="essay">Esai</option>
+        </select>
+        <input id="swQPoints" type="number" class="swal2-input" placeholder="Poin" value="10">
+        <textarea id="swQOptions" class="swal2-textarea" placeholder="Opsi (untuk Pilihan Ganda/Jawaban Ganda), format per baris: A|Teks opsi"></textarea>
+        <input id="swQAnswer" class="swal2-input" placeholder="Kunci jawaban (mis. A, atau A,C untuk Jawaban Ganda)">
+        <p class="small text-muted">Kosongkan opsi & kunci jawaban untuk soal Esai atau Isian Singkat (isi kunci jawaban Isian Singkat di kolom Kunci Jawaban).</p>`,
+      showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+      preConfirm: () => {
+        const optionsRaw = document.getElementById('swQOptions').value.trim();
+        const options = optionsRaw ? optionsRaw.split('\n').map(line => {
+          const [label, text] = line.split('|');
+          return { optionLabel: (label || '').trim(), optionText: (text || '').trim() };
+        }) : [];
+        const answerRaw = document.getElementById('swQAnswer').value.trim();
+        const qType = document.getElementById('swQType').value;
+        const correctAnswerKey = qType === 'multiple_answer' ? answerRaw.split(',').map(s => s.trim()) : answerRaw;
+        return {
+          questionText: document.getElementById('swQText').value,
+          questionType: qType,
+          points: document.getElementById('swQPoints').value,
+          options, correctAnswerKey
+        };
+      }
+    });
+    if (!value || !value.questionText) return;
+
+    if (quizId) {
+      await callApi('addQuestion', { token: getSessionToken(), quizId, ...value });
+      loadQuestions(quizId, null);
+    } else if (examId) {
+      await callApi('addExamQuestion', { token: getSessionToken(), examId, ...value });
+      loadExamQuestions(examId);
+    }
+  }
+
+  // ============================================================
+  // EXAM
+  // ============================================================
+
+  async function loadExams() {
+    const classId = document.getElementById('examClassSelect').value;
+    if (!classId) return;
+    const exams = await callApi('listExamsForClass', { token: getSessionToken(), classId });
+
+    document.getElementById('examsContainer').innerHTML = exams.map(x => `
+      <div class="card p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <strong>${x.title}</strong>
+            <div class="text-muted small">${new Date(x.scheduledStart).toLocaleString('id-ID')} — ${x.timeLimitMinutes} menit — ${x.questionPoolSize} soal/siswa</div>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" onclick="addQuestionDialog(null, '${x.examId}')">+ Soal</button>
+        </div>
+        <div id="examq-${x.examId}" class="mt-2 small"></div>
+      </div>
+    `).join('') || '<p class="text-muted">Belum ada ujian untuk kelas ini.</p>';
+  }
+
+  async function loadExamQuestions(examId) {
+    // Exam question pools are write-only from this screen (no list endpoint is
+    // exposed beyond addExamQuestion) — a confirmation toast is enough here;
+    // full pool review can be added later via a dedicated listExamQuestions action.
+    Swal.fire({ icon: 'success', title: 'Soal ditambahkan ke pool ujian', timer: 1200, showConfirmButton: false });
+  }
+
+  async function createExamDialog() {
+    const classId = document.getElementById('examClassSelect').value;
+    const subjectOptions = subjects.map(s => `<option value="${s.subjectId}">${s.subjectName}</option>`).join('');
+    const { value } = await Swal.fire({
+      title: 'Ujian Baru',
+      width: 500,
+      html: `
+        <select id="swSubject" class="swal2-select form-select">${subjectOptions}</select>
+        <input id="swTitle" class="swal2-input" placeholder="Judul ujian">
+        <input id="swTime" type="number" class="swal2-input" placeholder="Batas waktu (menit)">
+        <input id="swPool" type="number" class="swal2-input" placeholder="Jumlah soal per siswa">
+        <label class="form-label small d-block mt-2 text-start">Mulai</label>
+        <input id="swStart" type="datetime-local" class="swal2-input">
+        <label class="form-label small d-block mt-2 text-start">Selesai</label>
+        <input id="swEnd" type="datetime-local" class="swal2-input">
+        <label class="d-block mt-2"><input type="checkbox" id="swFullscreen" checked> Wajib mode layar penuh</label>`,
+      showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+      preConfirm: () => ({
+        subjectId: document.getElementById('swSubject').value,
+        title: document.getElementById('swTitle').value,
+        timeLimitMinutes: document.getElementById('swTime').value,
+        questionPoolSize: document.getElementById('swPool').value,
+        scheduledStart: document.getElementById('swStart').value,
+        scheduledEnd: document.getElementById('swEnd').value,
+        fullscreenRequired: document.getElementById('swFullscreen').checked
+      })
+    });
+    if (!value || !value.title) return;
+    await callApi('createExam', { token: getSessionToken(), classId, ...value });
+    loadExams();
+  }
+
+  // ============================================================
+  // ASSIGNMENT
+  // ============================================================
+
+  async function loadAssignments() {
+    const classId = document.getElementById('assignmentClassSelect').value;
+    if (!classId) return;
+    const assignments = await callApi('listAssignmentsByClass', { token: getSessionToken(), classId });
+
+    document.getElementById('assignmentsContainer').innerHTML = assignments.map(a => `
+      <div class="card p-3 mb-3 d-flex flex-row justify-content-between align-items-center">
+        <div>
+          <strong>${a.title}</strong>
+          <div class="text-muted small">Tenggat: ${new Date(a.dueDate).toLocaleString('id-ID')}</div>
+        </div>
+        <a class="btn btn-sm btn-outline-secondary" href="gradebook.html?assignmentId=${a.assignmentId}">Lihat Pengumpulan</a>
+      </div>
+    `).join('') || '<p class="text-muted">Belum ada tugas untuk kelas ini.</p>';
+  }
+
+  async function createAssignmentDialog() {
+    const classId = document.getElementById('assignmentClassSelect').value;
+    const { value } = await Swal.fire({
+      title: 'Tugas Baru',
+      html: `
+        <input id="swTitle" class="swal2-input" placeholder="Judul tugas">
+        <textarea id="swInstr" class="swal2-textarea" placeholder="Instruksi tugas"></textarea>
+        <input id="swScore" type="number" class="swal2-input" placeholder="Nilai maksimum" value="100">
+        <input id="swDue" type="datetime-local" class="swal2-input">`,
+      showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+      preConfirm: () => ({
+        title: document.getElementById('swTitle').value,
+        instructions: document.getElementById('swInstr').value,
+        maxScore: document.getElementById('swScore').value,
+        dueDate: document.getElementById('swDue').value
+      })
+    });
+    if (!value || !value.title) return;
+    await callApi('createAssignment', { token: getSessionToken(), classId, ...value });
+    loadAssignments();
+  }
+
+  // ============================================================
+  // CLASSES (admin only)
+  // ============================================================
+
+  let teachersCache = [];
+
+  async function loadClasses() {
+    teachersCache = await callApi('listTeachers', { token: getSessionToken() });
+    const teachersById = {};
+    teachersCache.forEach(t => { teachersById[t.teacherId] = t; });
+
+    document.getElementById('classesContainer').innerHTML = classes.map(c => `
+      <div class="col-md-4">
+        <div class="card p-3">
+          <div class="d-flex justify-content-between">
+            <strong>${c.className}</strong>
+            <span class="badge ${c.status === 'active' ? 'bg-success' : 'bg-secondary'}">${c.status}</span>
+          </div>
+          <div class="text-muted small">Tingkat ${c.grade} — ${c.academicYear}</div>
+          <div class="text-muted small mb-2">Wali kelas: ${teachersById[c.homeroomTeacherId] ? teachersById[c.homeroomTeacherId].fullName : '-'}</div>
+          <button class="btn btn-sm btn-outline-secondary" onclick="editClassDialog('${c.classId}')">Edit</button>
+        </div>
+      </div>
+    `).join('') || '<p class="text-muted">Belum ada kelas.</p>';
+  }
+
+  async function createClassDialog() {
+    const teacherOptions = '<option value="">- Belum ditentukan -</option>' + teachersCache.map(t => `<option value="${t.teacherId}">${t.fullName}</option>`).join('');
+    const { value } = await Swal.fire({
+      title: 'Kelas Baru',
+      html: `
+        <input id="swName" class="swal2-input" placeholder="Nama kelas, mis. X-IPA-1">
+        <select id="swGrade" class="swal2-select form-select">
+          <option value="X">Kelas X</option><option value="XI">Kelas XI</option><option value="XII">Kelas XII</option>
+        </select>
+        <input id="swYear" class="swal2-input" placeholder="Tahun ajaran, mis. 2026/2027">
+        <select id="swTeacher" class="swal2-select form-select">${teacherOptions}</select>`,
+      showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+      preConfirm: () => ({
+        className: document.getElementById('swName').value,
+        grade: document.getElementById('swGrade').value,
+        academicYear: document.getElementById('swYear').value,
+        homeroomTeacherId: document.getElementById('swTeacher').value
+      })
+    });
+    if (!value || !value.className) return;
+    await callApi('createClass', { token: getSessionToken(), ...value });
+    classes = await callApi('listClasses', { token: getSessionToken() });
+    fillSelect('examClassSelect', classes, 'classId', 'className');
+    fillSelect('assignmentClassSelect', classes, 'classId', 'className');
+    loadClasses();
+  }
+
+  async function editClassDialog(classId) {
+    const cls = classes.find(c => c.classId === classId);
+    const teacherOptions = '<option value="">- Belum ditentukan -</option>' + teachersCache.map(t =>
+      `<option value="${t.teacherId}" ${t.teacherId === cls.homeroomTeacherId ? 'selected' : ''}>${t.fullName}</option>`).join('');
+    const { value } = await Swal.fire({
+      title: 'Edit Kelas',
+      html: `
+        <input id="swName" class="swal2-input" value="${cls.className}">
+        <select id="swTeacher" class="swal2-select form-select">${teacherOptions}</select>
+        <select id="swStatus" class="swal2-select form-select">
+          <option value="active" ${cls.status === 'active' ? 'selected' : ''}>Aktif</option>
+          <option value="archived" ${cls.status === 'archived' ? 'selected' : ''}>Diarsipkan</option>
+        </select>`,
+      showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+      preConfirm: () => ({
+        className: document.getElementById('swName').value,
+        homeroomTeacherId: document.getElementById('swTeacher').value,
+        status: document.getElementById('swStatus').value
+      })
+    });
+    if (!value) return;
+    await callApi('updateClass', { token: getSessionToken(), classId, ...value });
+    classes = await callApi('listClasses', { token: getSessionToken() });
+    loadClasses();
+  }
+</script>
+
+</body>
+</html>

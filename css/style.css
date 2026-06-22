@@ -1,0 +1,54 @@
+/* css/style.css — tema dasar English Academy Indonesia */
+
+:root {
+  --color-primary: #00AEEF;
+  --color-secondary: #4CAF50;
+  --color-accent: #FFC107;
+  --color-text: #1f2937;
+  --color-bg: #f5f9fc;
+  --radius: 14px;
+}
+
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.navbar-brand img {
+  height: 32px;
+  margin-right: 8px;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.btn-primary:hover {
+  background-color: #0096cc;
+  border-color: #0096cc;
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary);
+  border-color: var(--color-secondary);
+  color: #fff;
+}
+
+.text-accent { color: var(--color-accent); }
+
+.card {
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.auth-card {
+  max-width: 420px;
+  margin: 64px auto;
+}
+
+.lesson-card .progress {
+  height: 6px;
+  border-radius: 4px;
+}

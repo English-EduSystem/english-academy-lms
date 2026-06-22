@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Penilaian — English Academy Indonesia</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app-navbar"></div>
+
+<div class="container pb-5">
+  <h5 class="fw-bold mb-3">✅ Penilaian</h5>
+
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><button class="nav-link active" data-tab="assignments">Tugas</button></li>
+    <li class="nav-item"><button class="nav-link" data-tab="quizEssays">Esai Kuis</button></li>
+    <li class="nav-item"><button class="nav-link" data-tab="examEssays">Esai Ujian</button></li>
+    <li class="nav-item"><button class="nav-link" data-tab="certificates">Sertifikat</button></li>
+  </ul>
+
+  <!-- ===================== TAB: ASSIGNMENT SUBMISSIONS ===================== -->
+  <div class="tab-pane" id="tab-assignments">
+    <div class="d-flex gap-2 mb-3">
+      <select class="form-select w-auto" id="assignmentClassSelect"></select>
+      <select class="form-select w-auto" id="assignmentSelect"></select>
+    </div>
+    <div id="submissionsContainer"></div>
+  </div>
+
+  <!-- ===================== TAB: QUIZ ESSAYS ===================== -->
+  <div class="tab-pane" id="tab-quizEssays" style="display:none;">
+    <div class="d-flex gap-2 mb-3">
+      <select class="form-select w-auto" id="quizSubjectSelect"></select>
+      <select class="form-select w-auto" id="quizSelect"></select>
+    </div>
+    <div id="quizEssayContainer"></div>
+  </div>
+
+  <!-- ===================== TAB: EXAM ESSAYS ===================== -->
+  <div class="tab-pane" id="tab-examEssays" style="display:none;">
+    <div class="d-flex gap-2 mb-3">
+      <select class="form-select w-auto" id="examClassSelect"></select>
+      <select class="form-select w-auto" id="examSelect"></select>
+    </div>
+    <div id="examEssayContainer"></div>
+  </div>
+
+  <!-- ===================== TAB: CERTIFICATES (manual issue) ===================== -->
+  <div class="tab-pane" id="tab-certificates" style="display:none;">
+    <p class="text-muted small">Sertifikat modul diterbitkan otomatis saat siswa menyelesaikan semua pelajaran. Gunakan halaman ini untuk memberi sertifikat tambahan secara manual (mis. prestasi lomba, partisipasi khusus).</p>
+    <select class="form-select w-auto mb-3" id="certClassSelect"></select>
+    <div id="certRosterContainer" class="row g-2"></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/navbar.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  (async function init() {
+    const user = await requireLogin();
+    if (!user) return;
+    renderNavbar('gradebook');
+
+    document.querySelectorAll('[data-tab]').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+    const subjects = await callApi('listSubjects', { token: getSessionToken() });
+    const classes = await callApi('listClasses', { token: getSessionToken() });
+
+    fillSelect('assignmentClassSelect', classes, 'classId', 'className');
+    fillSelect('quizSubjectSelect', subjects, 'subjectId', 'subjectName');
+    fillSelect('examClassSelect', classes, 'classId', 'className');
+    fillSelect('certClassSelect', classes, 'classId', 'className');
+
+    document.getElementById('certClassSelect').addEventListener('change', loadCertRoster);
+
+    document.getElementById('assignmentClassSelect').addEventListener('change', loadAssignmentOptions);
+    document.getElementById('assignmentSelect').addEventListener('change', loadSubmissions);
+    document.getElementById('quizSubjectSelect').addEventListener('change', loadQuizOptions);
+    document.getElementById('quizSelect').addEventListener('change', loadQuizEssays);
+    document.getElementById('examClassSelect').addEventListener('change', loadExamOptions);
+    document.getElementById('examSelect').addEventListener('change', loadExamEssays);
+
+    const params = new URLSearchParams(window.location.search);
+    if (classes.length) await loadAssignmentOptions();
+    if (params.get('assignmentId')) {
+      document.getElementById('assignmentSelect').value = params.get('assignmentId');
+      loadSubmissions();
+    }
+    if (subjects.length) loadQuizOptions();
+    if (classes.length) loadExamOptions();
+    if (classes.length) loadCertRoster();
+  })();
+
+  function switchTab(tab) {
+    document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.tab-pane').forEach(p => p.style.display = p.id === 'tab-' + tab ? 'block' : 'none');
+  }
+
+  function fillSelect(elId, items, valueKey, labelKey) {
+    document.getElementById(elId).innerHTML = items.map(i => `<option value="${i[valueKey]}">${i[labelKey]}</option>`).join('');
+  }
+
+  // ============================================================
+  // ASSIGNMENTS
+  // ============================================================
+
+  async function loadAssignmentOptions() {
+    const classId = document.getElementById('assignmentClassSelect').value;
+    if (!classId) return;
+    const assignments = await callApi('listAssignmentsByClass', { token: getSessionToken(), classId });
+    fillSelect('assignmentSelect', assignments, 'assignmentId', 'title');
+    if (assignments.length) loadSubmissions();
+  }
+
+  async function loadSubmissions() {
+    const assignmentId = document.getElementById('assignmentSelect').value;
+    if (!assignmentId) return;
+    const subs = await callApi('listSubmissionsForAssignment', { token: getSessionToken(), assignmentId });
+
+    document.getElementById('submissionsContainer').innerHTML = subs.map(s => `
+      <div class="card p-3 mb-2 d-flex flex-row justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <strong>${s.studentName}</strong>
+          <span class="badge ${s.status === 'graded' ? 'bg-success' : (s.status === 'late' ? 'bg-warning text-dark' : 'bg-secondary')} ms-2">${s.status}</span>
+          <div class="text-muted small">Dikumpulkan: ${new Date(s.submittedAt).toLocaleString('id-ID')}</div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <a class="btn btn-sm btn-outline-secondary" target="_blank" href="https://drive.google.com/file/d/${s.driveFileId}/view">Lihat File</a>
+          <input type="number" class="form-control form-control-sm" style="width:80px;" id="score-${s.submissionId}" placeholder="Nilai" value="${s.score || ''}">
+          <button class="btn btn-sm btn-primary" onclick="gradeSubmission('${s.submissionId}')">Simpan</button>
+        </div>
+      </div>
+    `).join('') || '<p class="text-muted">Belum ada siswa yang mengumpulkan.</p>';
+  }
+
+  async function gradeSubmission(submissionId) {
+    const score = document.getElementById('score-' + submissionId).value;
+    if (score === '') return;
+    try {
+      await callApi('gradeSubmission', { token: getSessionToken(), submissionId, score });
+      Swal.fire({ icon: 'success', title: 'Nilai disimpan', timer: 1000, showConfirmButton: false });
+      loadSubmissions();
+    } catch (err) {
+      Swal.fire('Gagal menyimpan nilai', err.message, 'error');
+    }
+  }
+
+  // ============================================================
+  // QUIZ ESSAYS
+  // ============================================================
+
+  async function loadQuizOptions() {
+    const subjectId = document.getElementById('quizSubjectSelect').value;
+    if (!subjectId) return;
+    const quizzes = await callApi('listQuizzesBySubject', { token: getSessionToken(), subjectId });
+    fillSelect('quizSelect', quizzes, 'quizId', 'title');
+    if (quizzes.length) loadQuizEssays();
+  }
+
+  async function loadQuizEssays() {
+    const quizId = document.getElementById('quizSelect').value;
+    if (!quizId) return;
+
+    const [attempts, questions] = await Promise.all([
+      callApi('listAttemptsNeedingReview', { token: getSessionToken(), quizId }),
+      callApi('listQuestionsForEditing', { token: getSessionToken(), quizId })
+    ]);
+    const essayQuestions = questions.filter(q => q.questionType === 'essay');
+
+    document.getElementById('quizEssayContainer').innerHTML = attempts.map(a => {
+      const responses = JSON.parse(a.responsesJson || '{}');
+      const essayFields = essayQuestions.map(q => `
+        <div class="mb-2">
+          <div class="small text-muted">${q.questionText}</div>
+          <div class="border rounded p-2 small mb-1">${responses[q.questionId] || '<i>Tidak dijawab</i>'}</div>
+          <input type="number" class="form-control form-control-sm" style="width:100px;" id="eq-${a.attemptId}-${q.questionId}" placeholder="Poin (maks ${q.points})">
+        </div>
+      `).join('');
+      return `
+        <div class="card p-3 mb-3">
+          ${essayFields}
+          <button class="btn btn-sm btn-primary mt-1" onclick='finalizeQuizEssay("${a.attemptId}", ${JSON.stringify(essayQuestions.map(q => q.questionId))})'>Simpan Nilai</button>
+        </div>`;
+    }).join('') || '<p class="text-muted">Tidak ada esai yang menunggu penilaian.</p>';
+  }
+
+  async function finalizeQuizEssay(attemptId, questionIds) {
+    const essayScores = {};
+    questionIds.forEach(qId => {
+      const el = document.getElementById(`eq-${attemptId}-${qId}`);
+      essayScores[qId] = el ? Number(el.value) || 0 : 0;
+    });
+    try {
+      await callApi('finalizeEssayGrading', { token: getSessionToken(), attemptId, essayScores });
+      Swal.fire({ icon: 'success', title: 'Nilai tersimpan', timer: 1000, showConfirmButton: false });
+      loadQuizEssays();
+    } catch (err) {
+      Swal.fire('Gagal', err.message, 'error');
+    }
+  }
+
+  // ============================================================
+  // EXAM ESSAYS
+  // ============================================================
+
+  async function loadExamOptions() {
+    const classId = document.getElementById('examClassSelect').value;
+    if (!classId) return;
+    const exams = await callApi('listExamsForClass', { token: getSessionToken(), classId });
+    fillSelect('examSelect', exams, 'examId', 'title');
+    if (exams.length) loadExamEssays();
+  }
+
+  async function loadExamEssays() {
+    const examId = document.getElementById('examSelect').value;
+    if (!examId) return;
+
+    const [attempts, questions] = await Promise.all([
+      callApi('listExamAttemptsNeedingReview', { token: getSessionToken(), examId }),
+      callApi('listExamQuestionsForEditing', { token: getSessionToken(), examId })
+    ]);
+    const essayQuestionsById = {};
+    questions.filter(q => q.questionType === 'essay').forEach(q => { essayQuestionsById[q.questionId] = q; });
+
+    document.getElementById('examEssayContainer').innerHTML = attempts.map(a => {
+      const responses = JSON.parse(a.responsesJson || '{}');
+      const assignedIds = JSON.parse(a.assignedQuestionIds || '[]').filter(id => essayQuestionsById[id]);
+      const essayFields = assignedIds.map(qId => {
+        const q = essayQuestionsById[qId];
+        return `
+          <div class="mb-2">
+            <div class="small text-muted">${q.questionText}</div>
+            <div class="border rounded p-2 small mb-1">${responses[qId] || '<i>Tidak dijawab</i>'}</div>
+            <input type="number" class="form-control form-control-sm" style="width:100px;" id="ex-${a.attemptId}-${qId}" placeholder="Poin (maks ${q.points})">
+          </div>`;
+      }).join('');
+      return `
+        <div class="card p-3 mb-3">
+          ${essayFields || '<p class="text-muted small">Tidak ada soal esai pada percobaan ini.</p>'}
+          <button class="btn btn-sm btn-primary mt-1" onclick='finalizeExamEssay("${a.attemptId}", ${JSON.stringify(assignedIds)})'>Simpan Nilai</button>
+        </div>`;
+    }).join('') || '<p class="text-muted">Tidak ada esai yang menunggu penilaian.</p>';
+  }
+
+  async function finalizeExamEssay(attemptId, questionIds) {
+    const essayScores = {};
+    questionIds.forEach(qId => {
+      const el = document.getElementById(`ex-${attemptId}-${qId}`);
+      essayScores[qId] = el ? Number(el.value) || 0 : 0;
+    });
+    try {
+      await callApi('finalizeExamEssayGrading', { token: getSessionToken(), attemptId, essayScores });
+      Swal.fire({ icon: 'success', title: 'Nilai tersimpan', timer: 1000, showConfirmButton: false });
+      loadExamEssays();
+    } catch (err) {
+      Swal.fire('Gagal', err.message, 'error');
+    }
+  }
+
+  // ============================================================
+  // CERTIFICATES (manual issue)
+  // ============================================================
+
+  async function loadCertRoster() {
+    const classId = document.getElementById('certClassSelect').value;
+    if (!classId) return;
+    const roster = await callApi('listStudentsByClass', { token: getSessionToken(), classId });
+
+    document.getElementById('certRosterContainer').innerHTML = roster.map(s => `
+      <div class="col-md-4">
+        <div class="card p-3 d-flex flex-row justify-content-between align-items-center">
+          <span>${s.fullName}</span>
+          <button class="btn btn-sm btn-outline-secondary" onclick="issueCertDialog('${s.studentId}')">+ Sertifikat</button>
+        </div>
+      </div>
+    `).join('') || '<p class="text-muted">Belum ada siswa di kelas ini.</p>';
+  }
+
+  async function issueCertDialog(studentId) {
+    const { value: title } = await Swal.fire({
+      title: 'Beri Sertifikat Manual',
+      input: 'text',
+      inputPlaceholder: 'mis. Juara 1 Lomba Pidato Bahasa Inggris',
+      showCancelButton: true, confirmButtonText: 'Terbitkan', cancelButtonText: 'Batal'
+    });
+    if (!title) return;
+
+    try {
+      await callApi('issueCertificate', { token: getSessionToken(), studentId, title, issuedFor: 'manual' });
+      Swal.fire('Sertifikat diterbitkan!', '', 'success');
+    } catch (err) {
+      Swal.fire('Gagal menerbitkan', err.message, 'error');
+    }
+  }
+</script>
+
+</body>
+</html>

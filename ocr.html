@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OCR Scanner — English Academy Indonesia</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app-navbar"></div>
+
+<div class="container pb-5" style="max-width: 800px;">
+  <h5 class="fw-bold mb-1">📷 OCR Scanner</h5>
+  <p class="text-muted mb-4">Foto buku, catatan tulisan tangan, atau papan tulis — teksnya akan diekstrak otomatis.</p>
+
+  <div class="card p-4 mb-4">
+    <input type="file" class="form-control mb-3" id="imageInput" accept="image/jpeg,image/png,image/webp">
+    <img id="imagePreview" class="img-fluid rounded mb-3" style="display:none; max-height:300px;">
+
+    <div class="progress mb-3" id="progressWrap" style="display:none; height: 22px;">
+      <div class="progress-bar" id="progressBar" style="width:0%;">0%</div>
+    </div>
+
+    <button class="btn btn-primary" id="scanBtn" disabled>Pindai Teks</button>
+  </div>
+
+  <div class="card p-4 mb-4" id="resultCard" style="display:none;">
+    <label class="form-label fw-semibold">Hasil Ekstraksi (bisa diedit)</label>
+    <textarea class="form-control mb-3" id="extractedText" rows="6"></textarea>
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <button class="btn btn-sm btn-outline-secondary" id="copyBtn">Salin Teks</button>
+      <button class="btn btn-sm btn-outline-secondary" id="downloadTxtBtn">Unduh .TXT</button>
+      <button class="btn btn-sm btn-outline-secondary" id="downloadPdfBtn">Unduh .PDF</button>
+      <button class="btn btn-sm btn-outline-primary" id="translateBtn">Terjemahkan ke Indonesia</button>
+      <button class="btn btn-sm btn-secondary" id="saveHistoryBtn">Simpan ke Riwayat</button>
+    </div>
+
+    <div id="translationBlock" style="display:none;">
+      <label class="form-label fw-semibold">Terjemahan</label>
+      <textarea class="form-control" id="translatedText" rows="6" readonly></textarea>
+    </div>
+  </div>
+
+  <h6 class="fw-bold mb-2">Riwayat Scan</h6>
+  <div id="historyList" class="row g-2"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/navbar.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  let selectedFile = null;
+  let selectedFileBase64 = null;
+
+  (async function init() {
+    const user = await requireLogin();
+    if (!user) return;
+    renderNavbar('ocr');
+    loadHistory();
+  })();
+
+  document.getElementById('imageInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    selectedFile = file;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      document.getElementById('imagePreview').src = reader.result;
+      document.getElementById('imagePreview').style.display = 'block';
+      selectedFileBase64 = reader.result.split(',')[1];
+      document.getElementById('scanBtn').disabled = false;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('scanBtn').addEventListener('click', async () => {
+    const progressWrap = document.getElementById('progressWrap');
+    const progressBar = document.getElementById('progressBar');
+    progressWrap.style.display = 'block';
+    document.getElementById('scanBtn').disabled = true;
+
+    try {
+      const result = await Tesseract.recognize(selectedFile, 'eng', {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            const pct = Math.round(m.progress * 100);
+            progressBar.style.width = pct + '%';
+            progressBar.textContent = pct + '%';
+          }
+        }
+      });
+
+      document.getElementById('extractedText').value = result.data.text.trim();
+      document.getElementById('resultCard').style.display = 'block';
+    } catch (err) {
+      Swal.fire('Gagal memindai', err.message, 'error');
+    } finally {
+      document.getElementById('scanBtn').disabled = false;
+    }
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(document.getElementById('extractedText').value);
+    Swal.fire({ icon: 'success', title: 'Disalin!', timer: 1000, showConfirmButton: false });
+  });
+
+  document.getElementById('downloadTxtBtn').addEventListener('click', () => {
+    const text = document.getElementById('extractedText').value;
+    const blob = new Blob([text], { type: 'text/plain' });
+    downloadBlob(blob, 'ocr-result.txt');
+  });
+
+  document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const text = document.getElementById('extractedText').value;
+    const lines = doc.splitTextToSize(text, 180);
+    doc.text(lines, 15, 20);
+    doc.save('ocr-result.pdf');
+  });
+
+  document.getElementById('translateBtn').addEventListener('click', async () => {
+    const text = document.getElementById('extractedText').value;
+    if (!text.trim()) return;
+    try {
+      const { translatedText } = await callApi('translateText', { token: getSessionToken(), text, sourceLang: 'en', targetLang: 'id' });
+      document.getElementById('translatedText').value = translatedText;
+      document.getElementById('translationBlock').style.display = 'block';
+    } catch (err) {
+      Swal.fire('Gagal menerjemahkan', err.message, 'error');
+    }
+  });
+
+  document.getElementById('saveHistoryBtn').addEventListener('click', async () => {
+    try {
+      await callApi('saveOcrResult', {
+        token: getSessionToken(),
+        base64Data: selectedFileBase64,
+        mimeType: selectedFile.type,
+        fileName: selectedFile.name,
+        extractedText: document.getElementById('extractedText').value,
+        translatedText: document.getElementById('translatedText').value || ''
+      });
+      Swal.fire('Tersimpan!', 'Hasil scan disimpan ke riwayat.', 'success');
+      loadHistory();
+    } catch (err) {
+      Swal.fire('Gagal menyimpan', err.message, 'error');
+    }
+  });
+
+  async function loadHistory() {
+    try {
+      const history = await callApi('listOcrHistory', { token: getSessionToken() });
+      document.getElementById('historyList').innerHTML = history.map(h => `
+        <div class="col-12">
+          <div class="card p-2 small d-flex flex-row justify-content-between align-items-start gap-2">
+            <div>
+              <div class="text-muted">${new Date(h.createdAt).toLocaleString('id-ID')}</div>
+              <div>${(h.extractedText || '').slice(0, 150)}${h.extractedText.length > 150 ? '...' : ''}</div>
+            </div>
+            <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteHistoryItem('${h.ocrId}')">Hapus</button>
+          </div>
+        </div>
+      `).join('') || '<p class="text-muted small">Belum ada riwayat.</p>';
+    } catch (err) { /* non-critical */ }
+  }
+
+  async function deleteHistoryItem(ocrId) {
+    try {
+      await callApi('deleteOcrHistoryItem', { token: getSessionToken(), ocrId });
+      loadHistory();
+    } catch (err) {
+      Swal.fire('Gagal menghapus', err.message, 'error');
+    }
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ujian — English Academy Indonesia</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app-navbar"></div>
+
+<div class="container pb-5" style="max-width: 800px;">
+
+  <!-- ====== DAFTAR UJIAN ====== -->
+  <div id="examListView">
+    <h5 class="fw-bold mb-3">Ujian</h5>
+    <div id="examList" class="row g-3"></div>
+  </div>
+
+  <!-- ====== HALAMAN MULAI (peringatan anti-cheat) ====== -->
+  <div id="examIntroView" style="display:none;">
+    <div class="card p-4">
+      <h5 class="fw-bold" id="introTitle"></h5>
+      <div class="alert alert-warning mt-3">
+        ⚠️ Ujian ini diawasi sistem anti-kecurangan. Berpindah tab atau keluar dari mode layar penuh akan tercatat.
+        Pastikan koneksi internet stabil — jawaban tersimpan otomatis setiap beberapa detik.
+      </div>
+      <button class="btn btn-primary" id="beginExamBtn">Mulai Ujian (Mode Layar Penuh)</button>
+    </div>
+  </div>
+
+  <!-- ====== MENGERJAKAN UJIAN ====== -->
+  <div id="examAttemptView" style="display:none;">
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0" id="examTitle"></h5>
+        <span class="badge bg-danger fs-6" id="examTimer"></span>
+      </div>
+      <div id="examQuestionsContainer"></div>
+      <button class="btn btn-primary mt-3" id="submitExamBtn">Kumpulkan Ujian</button>
+    </div>
+  </div>
+
+  <!-- ====== HASIL ====== -->
+  <div id="examResultView" style="display:none;">
+    <div class="card p-4 text-center">
+      <div class="fs-1 mb-2">✅</div>
+      <h5 class="fw-bold" id="examResultTitle"></h5>
+      <p class="text-muted" id="examResultDetail"></p>
+      <a href="dashboard-student.html" class="btn btn-primary mt-2">Kembali ke Dashboard</a>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/navbar.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  let currentExamId = params.get('examId');
+  let currentAttemptId = params.get('attemptId');
+  let timerInterval = null;
+  let autoSaveInterval = null;
+  let examQuestions = [];
+  let fullscreenRequired = false;
+
+  (async function init() {
+    const user = await requireLogin();
+    if (!user) return;
+    renderNavbar('lessons');
+
+    if (currentExamId && currentAttemptId) {
+      await resumeExamAttempt();
+    } else if (currentExamId) {
+      await showExamIntro();
+    } else {
+      await loadExamList();
+    }
+  })();
+
+  async function loadExamList() {
+    try {
+      const profile = await callApi('getMyProfile', { token: getSessionToken() });
+      const exams = await callApi('listExamsForClass', { token: getSessionToken(), classId: profile.classId });
+
+      document.getElementById('examList').innerHTML = exams.map(x => `
+        <div class="col-12">
+          <div class="card p-3 d-flex flex-row justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold">${x.title}</div>
+              <div class="text-muted small">${new Date(x.scheduledStart).toLocaleString('id-ID')} — ${x.timeLimitMinutes} menit</div>
+            </div>
+            <a class="btn btn-primary btn-sm" href="exam.html?examId=${x.examId}">Buka</a>
+          </div>
+        </div>
+      `).join('') || '<p class="text-muted">Belum ada ujian terjadwal.</p>';
+    } catch (err) {
+      Swal.fire('Gagal memuat', err.message, 'error');
+    }
+  }
+
+  async function showExamIntro() {
+    document.getElementById('examListView').style.display = 'none';
+    document.getElementById('examIntroView').style.display = 'block';
+    document.getElementById('introTitle').textContent = 'Bersiap memulai ujian';
+    document.getElementById('beginExamBtn').addEventListener('click', beginExam);
+  }
+
+  async function beginExam() {
+    try {
+      const { attemptId } = await callApi('startExamAttempt', { token: getSessionToken(), examId: currentExamId });
+      currentAttemptId = attemptId;
+      history.replaceState(null, '', `exam.html?examId=${currentExamId}&attemptId=${attemptId}`);
+      await requestFullscreenIfNeeded();
+      await resumeExamAttempt();
+    } catch (err) {
+      Swal.fire('Tidak bisa memulai ujian', err.message, 'error');
+    }
+  }
+
+  async function requestFullscreenIfNeeded() {
+    try {
+      if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+    } catch (e) { /* user may block fullscreen; anti-cheat still logs exits if it was granted */ }
+  }
+
+  async function resumeExamAttempt() {
+    document.getElementById('examListView').style.display = 'none';
+    document.getElementById('examIntroView').style.display = 'none';
+    document.getElementById('examAttemptView').style.display = 'block';
+
+    try {
+      const data = await callApi('getExamForAttempt', { token: getSessionToken(), attemptId: currentAttemptId });
+      examQuestions = data.questions;
+      fullscreenRequired = data.exam.fullscreenRequired === 'TRUE' || data.exam.fullscreenRequired === true;
+
+      document.getElementById('examTitle').textContent = data.exam.title;
+      document.getElementById('examQuestionsContainer').innerHTML = examQuestions.map((q, i) => renderExamQuestion(q, i)).join('');
+      restoreSavedResponses(data.savedResponses);
+
+      startExamTimer(data.remainingSeconds);
+      startAutoSave();
+      attachAntiCheatListeners();
+
+      document.getElementById('submitExamBtn').addEventListener('click', () => submitExam());
+    } catch (err) {
+      Swal.fire('Gagal memuat ujian', err.message, 'error');
+    }
+  }
+
+  function renderExamQuestion(q, index) {
+    let inputHtml = '';
+    if (q.questionType === 'multiple_choice' || q.questionType === 'true_false') {
+      inputHtml = q.options.map(o => `
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="eq_${q.questionId}" value="${o.optionLabel}">
+          <label class="form-check-label">${o.optionLabel}. ${o.optionText}</label>
+        </div>`).join('');
+    } else if (q.questionType === 'multiple_answer') {
+      inputHtml = q.options.map(o => `
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" data-group="eq_${q.questionId}" value="${o.optionLabel}">
+          <label class="form-check-label">${o.optionLabel}. ${o.optionText}</label>
+        </div>`).join('');
+    } else if (q.questionType === 'fill_blank') {
+      inputHtml = `<input type="text" class="form-control" data-fill="eq_${q.questionId}">`;
+    } else if (q.questionType === 'essay') {
+      inputHtml = `<textarea class="form-control" rows="4" data-essay="eq_${q.questionId}"></textarea>`;
+    }
+    return `
+      <div class="mb-4 pb-3 border-bottom">
+        <div class="fw-semibold mb-2">${index + 1}. ${q.questionText} <span class="text-muted small">(${q.points} poin)</span></div>
+        ${inputHtml}
+      </div>`;
+  }
+
+  function restoreSavedResponses(saved) {
+    if (!saved) return;
+    Object.keys(saved).forEach(qId => {
+      const value = saved[qId];
+      const radio = document.querySelector(`input[name="eq_${qId}"][value="${value}"]`);
+      if (radio) { radio.checked = true; return; }
+      const fillEl = document.querySelector(`input[data-fill="eq_${qId}"]`);
+      if (fillEl) { fillEl.value = value; return; }
+      const essayEl = document.querySelector(`textarea[data-essay="eq_${qId}"]`);
+      if (essayEl) { essayEl.value = value; return; }
+      if (Array.isArray(value)) {
+        value.forEach(v => {
+          const cb = document.querySelector(`input[data-group="eq_${qId}"][value="${v}"]`);
+          if (cb) cb.checked = true;
+        });
+      }
+    });
+  }
+
+  function collectExamResponses() {
+    const responses = {};
+    examQuestions.forEach(q => {
+      const key = 'eq_' + q.questionId;
+      if (q.questionType === 'multiple_choice' || q.questionType === 'true_false') {
+        const checked = document.querySelector(`input[name="${key}"]:checked`);
+        if (checked) responses[q.questionId] = checked.value;
+      } else if (q.questionType === 'multiple_answer') {
+        const checked = Array.from(document.querySelectorAll(`input[data-group="${key}"]:checked`)).map(el => el.value);
+        if (checked.length) responses[q.questionId] = checked;
+      } else if (q.questionType === 'fill_blank') {
+        const el = document.querySelector(`input[data-fill="${key}"]`);
+        if (el && el.value.trim()) responses[q.questionId] = el.value.trim();
+      } else if (q.questionType === 'essay') {
+        const el = document.querySelector(`textarea[data-essay="${key}"]`);
+        if (el && el.value.trim()) responses[q.questionId] = el.value.trim();
+      }
+    });
+    return responses;
+  }
+
+  function startExamTimer(remainingSeconds) {
+    let remaining = remainingSeconds;
+    const el = document.getElementById('examTimer');
+    timerInterval = setInterval(() => {
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      el.textContent = `${m}:${String(s).padStart(2, '0')}`;
+      if (remaining <= 0) {
+        clearInterval(timerInterval);
+        Swal.fire('Waktu habis!', 'Ujian dikumpulkan otomatis.', 'info');
+        submitExam();
+      }
+      remaining--;
+    }, 1000);
+  }
+
+  function startAutoSave() {
+    autoSaveInterval = setInterval(async () => {
+      try {
+        await callApi('autoSaveExamAttempt', { token: getSessionToken(), attemptId: currentAttemptId, responses: collectExamResponses() });
+      } catch (e) { /* silent — next interval will retry */ }
+    }, 20000);
+  }
+
+  function attachAntiCheatListeners() {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) reportCheatEvent('tab_switch');
+    });
+    document.addEventListener('fullscreenchange', () => {
+      if (fullscreenRequired && !document.fullscreenElement) reportCheatEvent('fullscreen_exit');
+    });
+  }
+
+  async function reportCheatEvent(eventType) {
+    try {
+      await callApi('recordCheatEvent', { token: getSessionToken(), attemptId: currentAttemptId, eventType });
+    } catch (e) { /* non-blocking */ }
+  }
+
+  async function submitExam() {
+    if (timerInterval) clearInterval(timerInterval);
+    if (autoSaveInterval) clearInterval(autoSaveInterval);
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+
+    try {
+      const result = await callApi('submitExamAttempt', { token: getSessionToken(), attemptId: currentAttemptId, responses: collectExamResponses() });
+      document.getElementById('examAttemptView').style.display = 'none';
+      document.getElementById('examResultView').style.display = 'block';
+
+      if (result.needsReview) {
+        document.getElementById('examResultTitle').textContent = 'Ujian Terkumpul';
+        document.getElementById('examResultDetail').textContent = 'Berisi soal esai — menunggu penilaian guru.';
+      } else {
+        const percent = result.maxPoints > 0 ? Math.round((result.earnedPoints / result.maxPoints) * 100) : 0;
+        document.getElementById('examResultTitle').textContent = `Nilai Kamu: ${percent}`;
+        document.getElementById('examResultDetail').textContent = `${result.earnedPoints} dari ${result.maxPoints} poin`;
+      }
+    } catch (err) {
+      Swal.fire('Gagal mengumpulkan ujian', err.message, 'error');
+    }
+  }
+</script>
+
+</body>
+</html>
