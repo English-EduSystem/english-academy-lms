@@ -10,7 +10,7 @@
 
 // GANTI dengan URL Web App Anda dari Apps Script (diakhiri "/exec").
 // Lihat docs/03-DEPLOYMENT-GUIDE.md Bagian A langkah 9.
-const API_BASE_URL = "TEMPEL_URL_WEB_APP_APPS_SCRIPT_DI_SINI";
+const API_BASE_URL = "https://script.google.com/macros/s/AKfycbwPg8phJOgtl6yIBOsfCsjYjuzpfIABnnCJChwgjcLSb9LJZJJkusrco0MGGVU3Rs297w/exec";
 
 // OPSIONAL: isi dengan Google OAuth Client ID Anda untuk mengaktifkan tombol
 // "Masuk dengan Google" di index.html. Kosongkan ("") untuk menyembunyikan
