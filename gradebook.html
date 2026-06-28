@@ -12,8 +12,15 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">✅ Penilaian</h4>
+    <p>Nilai tugas dan esai kuis/ujian</p>
+  </div>
+</div>
 
-<div class="container pb-5">
+
+<div class="container py-4 pb-5">
   <h5 class="fw-bold mb-3">✅ Penilaian</h5>
 
   <ul class="nav nav-tabs mb-3">
@@ -25,7 +32,7 @@
 
   <!-- ===================== TAB: ASSIGNMENT SUBMISSIONS ===================== -->
   <div class="tab-pane" id="tab-assignments">
-    <div class="d-flex gap-2 mb-3">
+    <div class="toolbar">
       <select class="form-select w-auto" id="assignmentClassSelect"></select>
       <select class="form-select w-auto" id="assignmentSelect"></select>
     </div>
@@ -34,7 +41,7 @@
 
   <!-- ===================== TAB: QUIZ ESSAYS ===================== -->
   <div class="tab-pane" id="tab-quizEssays" style="display:none;">
-    <div class="d-flex gap-2 mb-3">
+    <div class="toolbar">
       <select class="form-select w-auto" id="quizSubjectSelect"></select>
       <select class="form-select w-auto" id="quizSelect"></select>
     </div>
@@ -43,7 +50,7 @@
 
   <!-- ===================== TAB: EXAM ESSAYS ===================== -->
   <div class="tab-pane" id="tab-examEssays" style="display:none;">
-    <div class="d-flex gap-2 mb-3">
+    <div class="toolbar">
       <select class="form-select w-auto" id="examClassSelect"></select>
       <select class="form-select w-auto" id="examSelect"></select>
     </div>
@@ -185,7 +192,7 @@
         </div>
       `).join('');
       return `
-        <div class="card p-3 mb-3">
+        <div class="card section-card mb-3">
           ${essayFields}
           <button class="btn btn-sm btn-primary mt-1" onclick='finalizeQuizEssay("${a.attemptId}", ${JSON.stringify(essayQuestions.map(q => q.questionId))})'>Simpan Nilai</button>
         </div>`;
@@ -243,7 +250,7 @@
           </div>`;
       }).join('');
       return `
-        <div class="card p-3 mb-3">
+        <div class="card section-card mb-3">
           ${essayFields || '<p class="text-muted small">Tidak ada soal esai pada percobaan ini.</p>'}
           <button class="btn btn-sm btn-primary mt-1" onclick='finalizeExamEssay("${a.attemptId}", ${JSON.stringify(assignedIds)})'>Simpan Nilai</button>
         </div>`;

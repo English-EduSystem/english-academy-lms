@@ -12,12 +12,19 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">📖 Kosakata</h4>
+    <p>Cari dan simpan kosakata Bahasa Inggris</p>
+  </div>
+</div>
+
 
 <div class="container pb-5" style="max-width: 800px;">
   <h5 class="fw-bold mb-1">📖 Kosakata</h5>
   <p class="text-muted mb-4">Cari arti kata Bahasa Inggris dan simpan ke daftar kosakatamu.</p>
 
-  <div class="card p-4 mb-4">
+  <div class="card section-card mb-4">
     <div class="input-group">
       <input type="text" class="form-control" id="wordInput" placeholder="Ketik kata Bahasa Inggris...">
       <button class="btn btn-primary" id="searchBtn">Cari</button>
@@ -34,7 +41,7 @@
     </div>
   </div>
 
-  <h6 class="fw-bold mb-2">Kosakataku</h6>
+  <div class="section-title">Kosakataku</div>
   <div id="vocabList" class="row g-2"></div>
 </div>
 
@@ -91,7 +98,7 @@
       const words = await callApi('listMyVocabulary', { token: getSessionToken() });
       document.getElementById('vocabList').innerHTML = words.map(w => `
         <div class="col-md-6">
-          <div class="card p-3 h-100">
+          <div class="card section-card h-100">
             <div class="d-flex justify-content-between">
               <strong>${w.word}</strong>
               <button class="btn btn-sm ${w.isFavorite === 'TRUE' ? 'btn-warning' : 'btn-outline-secondary'}" onclick="toggleFav('${w.vocabId}')">★</button>

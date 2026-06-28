@@ -12,8 +12,15 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">📚 Materi & Tugas</h4>
+    <p>Kelola modul, pelajaran, kuis, ujian, dan tugas</p>
+  </div>
+</div>
 
-<div class="container pb-5">
+
+<div class="container py-4 pb-5">
   <h5 class="fw-bold mb-3">📚 Materi & Tugas</h5>
 
   <ul class="nav nav-tabs mb-3">
@@ -26,7 +33,7 @@
 
   <!-- ===================== TAB: MODULES & LESSONS ===================== -->
   <div class="tab-pane" id="tab-modules">
-    <div class="d-flex gap-2 align-items-center mb-3">
+    <div class="toolbar">
       <select class="form-select w-auto" id="moduleSubjectSelect"></select>
       <button class="btn btn-sm btn-primary" id="newModuleBtn">+ Modul Baru</button>
     </div>
@@ -35,7 +42,7 @@
 
   <!-- ===================== TAB: QUIZ ===================== -->
   <div class="tab-pane" id="tab-quiz" style="display:none;">
-    <div class="d-flex gap-2 align-items-center mb-3">
+    <div class="toolbar">
       <select class="form-select w-auto" id="quizSubjectSelect"></select>
       <button class="btn btn-sm btn-primary" id="newQuizBtn">+ Kuis Baru</button>
     </div>
@@ -44,7 +51,7 @@
 
   <!-- ===================== TAB: EXAM ===================== -->
   <div class="tab-pane" id="tab-exam" style="display:none;">
-    <div class="d-flex gap-2 align-items-center mb-3">
+    <div class="toolbar">
       <select class="form-select w-auto" id="examClassSelect"></select>
       <button class="btn btn-sm btn-primary" id="newExamBtn">+ Ujian Baru</button>
     </div>
@@ -53,7 +60,7 @@
 
   <!-- ===================== TAB: ASSIGNMENT ===================== -->
   <div class="tab-pane" id="tab-assignment" style="display:none;">
-    <div class="d-flex gap-2 align-items-center mb-3">
+    <div class="toolbar">
       <select class="form-select w-auto" id="assignmentClassSelect"></select>
       <button class="btn btn-sm btn-primary" id="newAssignmentBtn">+ Tugas Baru</button>
     </div>
@@ -134,7 +141,7 @@
     const modules = await callApi('listModules', { token: getSessionToken(), subjectId });
 
     document.getElementById('modulesContainer').innerHTML = modules.map(m => `
-      <div class="card p-3 mb-3">
+      <div class="card section-card mb-3">
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <strong>${m.title}</strong>
@@ -282,7 +289,7 @@
     const quizzes = await callApi('listQuizzesBySubject', { token: getSessionToken(), subjectId });
 
     document.getElementById('quizzesContainer').innerHTML = quizzes.map(q => `
-      <div class="card p-3 mb-3">
+      <div class="card section-card mb-3">
         <div class="d-flex justify-content-between align-items-center">
           <strong>${q.title}</strong>
           <button class="btn btn-sm btn-outline-secondary" onclick="addQuestionDialog('${q.quizId}', null)">+ Soal</button>
@@ -385,7 +392,7 @@
     const exams = await callApi('listExamsForClass', { token: getSessionToken(), classId });
 
     document.getElementById('examsContainer').innerHTML = exams.map(x => `
-      <div class="card p-3 mb-3">
+      <div class="card section-card mb-3">
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <strong>${x.title}</strong>
@@ -492,7 +499,7 @@
 
     document.getElementById('classesContainer').innerHTML = classes.map(c => `
       <div class="col-md-4">
-        <div class="card p-3">
+        <div class="card section-card">
           <div class="d-flex justify-content-between">
             <strong>${c.className}</strong>
             <span class="badge ${c.status === 'active' ? 'bg-success' : 'bg-secondary'}">${c.status}</span>

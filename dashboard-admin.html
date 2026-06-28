@@ -12,33 +12,36 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">⚙️ Dashboard Admin</h4>
+    <p>Ringkasan sistem English Academy Indonesia</p>
+  </div>
+</div>
 
-<div class="container pb-5">
+
+<div class="container py-4 pb-5">
   <h4 class="fw-bold mb-1">Dashboard Admin</h4>
   <p class="text-muted mb-4">Ringkasan sistem English Academy Indonesia.</p>
 
   <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3"><div class="card p-3 text-center"><div class="fs-3 fw-bold text-primary" id="statStudents">-</div><div class="text-muted small">Siswa</div></div></div>
-    <div class="col-6 col-md-3"><div class="card p-3 text-center"><div class="fs-3 fw-bold" style="color:var(--color-secondary);" id="statTeachers">-</div><div class="text-muted small">Guru</div></div></div>
-    <div class="col-6 col-md-3"><div class="card p-3 text-center"><div class="fs-3 fw-bold text-accent" id="statClasses">-</div><div class="text-muted small">Kelas Aktif</div></div></div>
-    <div class="col-6 col-md-3"><div class="card p-3 text-center"><div class="fs-3 fw-bold text-danger" id="statPending">-</div><div class="text-muted small">Menunggu Aktivasi</div></div></div>
+    <div class="col-6 col-md-3"><div class="card stat-card blue"><div class="stat-icon blue">📊</div><div class="stat-value text-primary" id="statStudents">-</div><div class="stat-label">Siswa</div></div></div>
+    <div class="col-6 col-md-3"><div class="card stat-card green"><div class="stat-icon green">👥</div><div class="stat-value" style="color:var(--secondary);" id="statTeachers">-</div><div class="stat-label">Guru</div></div></div>
+    <div class="col-6 col-md-3"><div class="card stat-card amber"><div class="stat-icon amber">📋</div><div class="stat-value text-accent" id="statClasses">-</div><div class="stat-label">Kelas Aktif</div></div></div>
+    <div class="col-6 col-md-3"><div class="card stat-card red"><div class="stat-icon red">🔴</div><div class="stat-value" style="color:var(--danger);" id="statPending">-</div><div class="stat-label">Menunggu Aktivasi</div></div></div>
   </div>
 
   <div class="row g-3 mb-4">
     <div class="col-md-3 col-6">
-      <a href="user-management.html" class="card p-3 text-center text-decoration-none h-100">
-        <div class="fs-2">👥</div><div class="fw-semibold mt-1">Kelola Pengguna</div>
-      </a>
+      <a href="user-management.html" class="card lesson-card text-center"><span class="card-icon">👥</span><div class="card-title">Kelola Pengguna</div></a>
     </div>
     <div class="col-md-3 col-6">
-      <a href="content-manager.html" class="card p-3 text-center text-decoration-none h-100">
-        <div class="fs-2">📚</div><div class="fw-semibold mt-1">Materi & Tugas</div>
-      </a>
+      <a href="content-manager.html" class="card lesson-card text-center"><span class="card-icon">📚</span><div class="card-title">Materi & Tugas</div></a>
     </div>
   </div>
 
-  <div class="card p-3">
-    <h6 class="fw-bold mb-2">Aktivitas Terbaru</h6>
+  <div class="card section-card">
+    <div class="section-title">Aktivitas Terbaru</div>
     <ul class="list-group list-group-flush" id="activityList"></ul>
   </div>
 </div>

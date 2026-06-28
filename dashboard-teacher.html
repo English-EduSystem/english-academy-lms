@@ -12,45 +12,46 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">👨‍🏫 Dashboard Guru</h4>
+    <p>&nbsp;</p>
+  </div>
+</div>
 
-<div class="container pb-5">
+
+<div class="container py-4 pb-5">
   <h4 class="fw-bold mb-1">Halo, <span id="teacherName"></span> 👋</h4>
   <p class="text-muted mb-4">Berikut ringkasan kelas yang Anda ampu.</p>
 
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-      <div class="card p-3 text-center"><div class="fs-3 fw-bold text-primary" id="statClasses">-</div><div class="text-muted small">Kelas Diampu</div></div>
+      <div class="card stat-card blue"><div class="stat-icon blue">📊</div><div class="stat-value text-primary" id="statClasses">-</div><div class="stat-label">Kelas Diampu</div></div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card p-3 text-center"><div class="fs-3 fw-bold" style="color:var(--color-secondary);" id="statStudents">-</div><div class="text-muted small">Total Siswa</div></div>
+      <div class="card stat-card green"><div class="stat-icon green">👥</div><div class="stat-value" style="color:var(--secondary);" id="statStudents">-</div><div class="stat-label">Total Siswa</div></div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card p-3 text-center"><div class="fs-3 fw-bold text-accent" id="statSubmissions">-</div><div class="text-muted small">Tugas Belum Dinilai</div></div>
+      <div class="card stat-card amber"><div class="stat-icon amber">📋</div><div class="stat-value text-accent" id="statSubmissions">-</div><div class="stat-label">Tugas Belum Dinilai</div></div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card p-3 text-center"><div class="fs-3 fw-bold text-danger" id="statEssays">-</div><div class="text-muted small">Esai Kuis Belum Dinilai</div></div>
+      <div class="card stat-card red"><div class="stat-icon red">🔴</div><div class="stat-value" style="color:var(--danger);" id="statEssays">-</div><div class="stat-label">Esai Kuis Belum Dinilai</div></div>
     </div>
   </div>
 
   <div class="row g-3 mb-4">
     <div class="col-md-4 col-6">
-      <a href="content-manager.html" class="card p-3 text-center text-decoration-none h-100">
-        <div class="fs-2">📚</div><div class="fw-semibold mt-1">Materi & Tugas</div>
-      </a>
+      <a href="content-manager.html" class="card lesson-card text-center"><span class="card-icon">📚</span><div class="card-title">Materi & Tugas</div></a>
     </div>
     <div class="col-md-4 col-6">
-      <a href="gradebook.html" class="card p-3 text-center text-decoration-none h-100">
-        <div class="fs-2">✅</div><div class="fw-semibold mt-1">Penilaian</div>
-      </a>
+      <a href="gradebook.html" class="card lesson-card text-center"><span class="card-icon">✅</span><div class="card-title">Penilaian</div></a>
     </div>
     <div class="col-md-4 col-6">
-      <a href="attendance.html" class="card p-3 text-center text-decoration-none h-100">
-        <div class="fs-2">🗓️</div><div class="fw-semibold mt-1">Kehadiran</div>
-      </a>
+      <a href="attendance.html" class="card lesson-card text-center"><span class="card-icon">🗓️</span><div class="card-title">Kehadiran</div></a>
     </div>
   </div>
 
-  <h6 class="fw-bold mb-2">Kelas Saya</h6>
+  <div class="section-title">Kelas Saya</div>
   <div id="myClassesList" class="row g-2"></div>
 </div>
 
@@ -74,7 +75,7 @@
 
       document.getElementById('myClassesList').innerHTML = data.myClasses.map(c => `
         <div class="col-md-4">
-          <div class="card p-3">
+          <div class="card section-card">
             <div class="fw-semibold">${c.className}</div>
             <div class="text-muted small">${c.academicYear}</div>
           </div>

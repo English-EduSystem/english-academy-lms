@@ -11,90 +11,84 @@
 </head>
 <body>
 
-<!-- ===== NAVBAR ===== -->
-<nav class="navbar bg-white shadow-sm mb-0">
-  <div class="container">
-    <span class="navbar-brand fw-bold" style="color:var(--color-primary);">
-      English Academy <span class="text-accent">Indonesia</span>
-    </span>
-  </div>
-</nav>
+<div class="auth-wrap">
 
-<!-- ===== KARTU LOGIN ===== -->
-<div class="container">
-  <div class="card auth-card p-4">
-    <div class="card-body">
+  <div class="auth-card">
 
-      <h4 class="fw-bold mb-1">Masuk</h4>
-      <p class="text-muted mb-4">Platform Belajar Bahasa Inggris — Kurikulum Merdeka SMA.</p>
+    <!-- Logo -->
+    <div class="auth-logo">
+      🎓 English<span class="dot">.</span>Academy Indonesia
+    </div>
 
-      <form id="loginForm" novalidate>
-        <div class="mb-3">
-          <label class="form-label small fw-semibold">Email</label>
-          <input type="email" class="form-control" id="loginEmail" autocomplete="email"
-                 placeholder="Masukkan email Anda" required>
+    <h5 class="fw-bold mb-1">Selamat datang</h5>
+    <p class="text-muted mb-4" style="font-size:.85rem;">Masuk ke platform belajar Bahasa Inggris SMA</p>
+
+    <form id="loginForm" novalidate>
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" id="loginEmail" autocomplete="email" placeholder="email@sekolah.sch.id" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label d-flex justify-content-between align-items-center">
+          Password
+          <a href="#" id="forgotLink" class="text-decoration-none" style="font-size:.78rem;font-weight:500;color:var(--primary);">Lupa password?</a>
+        </label>
+        <div class="input-group">
+          <input type="password" class="form-control" id="loginPassword" autocomplete="current-password" placeholder="Masukkan password" required>
+          <button class="btn btn-outline-secondary" type="button" id="togglePwd" title="Tampilkan password">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
         </div>
-        <div class="mb-3">
-          <label class="form-label small fw-semibold d-flex justify-content-between">
-            Password
-            <a href="#" class="text-decoration-none small fw-normal" id="forgotLink">Lupa password?</a>
-          </label>
-          <div class="input-group">
-            <input type="password" class="form-control" id="loginPassword"
-                   autocomplete="current-password" placeholder="Masukkan password" required>
-            <button class="btn btn-outline-secondary" type="button" id="togglePassword">👁</button>
-          </div>
-        </div>
-
-        <div id="loginError" class="alert alert-danger py-2 small mb-3" style="display:none;"></div>
-
-        <button type="submit" class="btn btn-primary w-100" id="loginBtn">Masuk</button>
-      </form>
-
-      <!-- Google Sign-In (muncul hanya jika GOOGLE_OAUTH_CLIENT_ID diisi di api.js) -->
-      <div id="googleBlock" style="display:none;">
-        <div class="d-flex align-items-center gap-2 my-3">
-          <hr class="flex-grow-1"><span class="text-muted small">atau</span><hr class="flex-grow-1">
-        </div>
-        <div id="googleSignInButton" class="d-flex justify-content-center"></div>
       </div>
 
-      <p class="text-muted small text-center mt-3 mb-0">
-        Akun dibuat oleh guru Bahasa Inggris Anda.<br>
-        Hubungi guru jika belum memiliki akun.
-      </p>
+      <div id="loginError" class="alert alert-danger py-2 small mb-3" style="display:none;"></div>
+
+      <button type="submit" class="btn btn-primary w-100 py-2 mt-1" id="loginBtn" style="font-size:.92rem;">
+        Masuk
+      </button>
+    </form>
+
+    <!-- Google Sign-In (opsional) -->
+    <div id="googleBlock" style="display:none;">
+      <div class="d-flex align-items-center gap-2 my-3">
+        <hr class="flex-grow-1 m-0"><span class="text-muted" style="font-size:.78rem;">atau</span><hr class="flex-grow-1 m-0">
+      </div>
+      <div id="googleSignInButton" class="d-flex justify-content-center"></div>
     </div>
+
+    <div class="divider"></div>
+    <p class="text-muted text-center mb-0" style="font-size:.78rem;">
+      Akun dibuat oleh guru Bahasa Inggris Anda.<br>Belum punya akun? Hubungi guru kelas.
+    </p>
   </div>
+
 </div>
 
 <!-- ===== MODAL LUPA PASSWORD ===== -->
 <div class="modal fade" id="forgotModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
     <div class="modal-content">
-      <div class="modal-header border-0 pb-0">
-        <h5 class="modal-title fw-bold">Lupa Password</h5>
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold">Lupa Password</h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div id="forgotStep1">
-          <p class="text-muted small">Masukkan email yang terdaftar. Kami akan mengirimkan link untuk membuat password baru.</p>
+          <p class="text-muted mb-3" style="font-size:.85rem;">Masukkan email terdaftar — kami kirimkan link untuk membuat password baru.</p>
           <div class="mb-3">
-            <label class="form-label small fw-semibold">Email</label>
+            <label class="form-label">Email</label>
             <input type="email" class="form-control" id="forgotEmail" placeholder="email@sekolah.sch.id">
           </div>
           <div id="forgotError" class="alert alert-danger py-2 small" style="display:none;"></div>
           <button class="btn btn-primary w-100" id="forgotSendBtn">Kirim Link Reset</button>
         </div>
-        <div id="forgotStep2" style="display:none;">
-          <div class="text-center py-2">
-            <div class="fs-1 mb-2">📧</div>
-            <h6 class="fw-bold">Cek Inbox Email Anda</h6>
-            <p class="text-muted small mb-0">
-              Jika email terdaftar, link reset password sudah dikirim.
-              Link berlaku <strong>1 jam</strong>.
-            </p>
-            <p class="text-muted small mt-2">Tidak dapat email? Cek folder Spam, atau hubungi admin sekolah.</p>
-          </div>
+        <div id="forgotStep2" style="display:none;" class="text-center py-2">
+          <div style="font-size:2.5rem;margin-bottom:12px;">📧</div>
+          <h6 class="fw-bold">Cek Inbox Email Anda</h6>
+          <p class="text-muted mb-0" style="font-size:.83rem;">
+            Jika email terdaftar, link reset sudah dikirim. Link berlaku <strong>1 jam</strong>.<br>
+            Tidak dapat email? Cek folder Spam.
+          </p>
         </div>
       </div>
     </div>
@@ -106,37 +100,31 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-  // ── redirect jika sudah login ──────────────────────────────────────────────
-  (function () {
-    const user = getCurrentUser();
-    if (user) goToDashboard(user.role);
-  })();
+  // Redirect if already logged in
+  (function() { const u = getCurrentUser(); if (u) goToDashboard(u.role); })();
 
   function goToDashboard(role) {
-    const map = { student: 'dashboard-student.html', teacher: 'dashboard-teacher.html', admin: 'dashboard-admin.html' };
-    window.location.href = map[role] || 'index.html';
+    const m = { student:'dashboard-student.html', teacher:'dashboard-teacher.html', admin:'dashboard-admin.html' };
+    window.location.href = m[role] || 'index.html';
   }
 
-  // ── toggle show/hide password ──────────────────────────────────────────────
-  document.getElementById('togglePassword').addEventListener('click', () => {
+  function showErr(msg) {
+    const el = document.getElementById('loginError');
+    el.textContent = msg; el.style.display = msg ? 'block' : 'none';
+  }
+
+  // Toggle password visibility
+  document.getElementById('togglePwd').addEventListener('click', () => {
     const inp = document.getElementById('loginPassword');
     inp.type = inp.type === 'password' ? 'text' : 'password';
   });
 
-  // ── login ──────────────────────────────────────────────────────────────────
-  function showError(msg) {
-    const el = document.getElementById('loginError');
-    el.textContent = msg;
-    el.style.display = msg ? 'block' : 'none';
-  }
-
+  // Login form
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    showError('');
+    e.preventDefault(); showErr('');
     const btn = document.getElementById('loginBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
-
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memproses...';
     try {
       const data = await callApi('login', {
         email:    document.getElementById('loginEmail').value.trim(),
@@ -144,40 +132,33 @@
       });
       saveSession(data.sessionToken, data.user);
       goToDashboard(data.user.role);
-    } catch (err) {
-      showError(err.message || 'Email atau password salah. Coba lagi.');
-      btn.disabled = false;
-      btn.textContent = 'Masuk';
+    } catch(err) {
+      showErr(err.message || 'Email atau password salah. Coba lagi.');
+      btn.disabled = false; btn.textContent = 'Masuk';
     }
   });
 
-  // ── Google Sign-In (opsional) ──────────────────────────────────────────────
+  // Google Sign-In
   if (typeof GOOGLE_OAUTH_CLIENT_ID !== 'undefined' && GOOGLE_OAUTH_CLIENT_ID) {
     document.getElementById('googleBlock').style.display = 'block';
     window.onload = () => {
       if (typeof google === 'undefined') return;
-      google.accounts.id.initialize({ client_id: GOOGLE_OAUTH_CLIENT_ID, callback: handleGoogleCredential });
-      google.accounts.id.renderButton(document.getElementById('googleSignInButton'), { theme: 'outline', size: 'large', width: 280 });
+      google.accounts.id.initialize({ client_id: GOOGLE_OAUTH_CLIENT_ID, callback: async (resp) => {
+        showErr('');
+        try {
+          const data = await callApi('loginWithGoogle', { idToken: resp.credential });
+          saveSession(data.sessionToken, data.user);
+          goToDashboard(data.user.role);
+        } catch(err) { showErr(err.message); }
+      }});
+      google.accounts.id.renderButton(document.getElementById('googleSignInButton'), { theme:'outline', size:'large', width:340 });
     };
   }
 
-  async function handleGoogleCredential(response) {
-    showError('');
-    try {
-      const data = await callApi('loginWithGoogle', { idToken: response.credential });
-      saveSession(data.sessionToken, data.user);
-      goToDashboard(data.user.role);
-    } catch (err) {
-      showError(err.message || 'Login Google gagal. Coba lagi.');
-    }
-  }
-
-  // ── modal lupa password ────────────────────────────────────────────────────
+  // Forgot password modal
   const forgotModal = new bootstrap.Modal(document.getElementById('forgotModal'));
-
   document.getElementById('forgotLink').addEventListener('click', (e) => {
     e.preventDefault();
-    // Reset state modal
     document.getElementById('forgotStep1').style.display = 'block';
     document.getElementById('forgotStep2').style.display = 'none';
     document.getElementById('forgotEmail').value = '';
@@ -186,33 +167,24 @@
   });
 
   document.getElementById('forgotSendBtn').addEventListener('click', async () => {
-    const email = document.getElementById('forgotEmail').value.trim();
-    const errEl = document.getElementById('forgotError');
+    const email  = document.getElementById('forgotEmail').value.trim();
+    const errEl  = document.getElementById('forgotError');
     errEl.style.display = 'none';
-
-    if (!email) {
-      errEl.textContent = 'Masukkan alamat email Anda.';
-      errEl.style.display = 'block';
-      return;
-    }
+    if (!email) { errEl.textContent = 'Masukkan alamat email.'; errEl.style.display = 'block'; return; }
 
     const btn = document.getElementById('forgotSendBtn');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Mengirim...';
-
     try {
       await callApi('requestPasswordReset', { email });
-      // Tampilkan langkah 2 terlepas dari apakah email benar-benar ditemukan
       document.getElementById('forgotStep1').style.display = 'none';
       document.getElementById('forgotStep2').style.display = 'block';
-    } catch (err) {
-      errEl.textContent = err.message || 'Terjadi kesalahan. Coba beberapa saat lagi.';
+    } catch(err) {
+      errEl.textContent = err.message || 'Terjadi kesalahan.';
       errEl.style.display = 'block';
-      btn.disabled = false;
-      btn.textContent = 'Kirim Link Reset';
+      btn.disabled = false; btn.textContent = 'Kirim Link Reset';
     }
   });
 </script>
-
 </body>
 </html>

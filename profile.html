@@ -12,12 +12,19 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">👤 Profil Saya</h4>
+    <p>Edit informasi akun dan ganti password</p>
+  </div>
+</div>
+
 
 <div class="container pb-5" style="max-width: 600px;">
   <h5 class="fw-bold mb-3">👤 Profil Saya</h5>
 
-  <div class="card p-4 mb-3">
-    <h6 class="fw-bold mb-3">Informasi Dasar</h6>
+  <div class="card section-card mb-3">
+    <div class="section-title">Informasi Dasar</div>
     <div class="mb-3">
       <label class="form-label small fw-semibold">Nama Lengkap</label>
       <input type="text" class="form-control" id="fullName">
@@ -64,8 +71,8 @@
     <button class="btn btn-primary" id="saveProfileBtn">Simpan Perubahan</button>
   </div>
 
-  <div class="card p-4">
-    <h6 class="fw-bold mb-3">Ganti Password</h6>
+  <div class="card section-card">
+    <div class="section-title">Ganti Password</div>
     <div class="mb-3">
       <input type="password" class="form-control" id="oldPassword" placeholder="Password saat ini">
     </div>

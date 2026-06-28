@@ -12,12 +12,19 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">📷 OCR Scanner</h4>
+    <p>Ekstrak teks dari foto buku atau catatan</p>
+  </div>
+</div>
+
 
 <div class="container pb-5" style="max-width: 800px;">
   <h5 class="fw-bold mb-1">📷 OCR Scanner</h5>
   <p class="text-muted mb-4">Foto buku, catatan tulisan tangan, atau papan tulis — teksnya akan diekstrak otomatis.</p>
 
-  <div class="card p-4 mb-4">
+  <div class="card section-card mb-4">
     <input type="file" class="form-control mb-3" id="imageInput" accept="image/jpeg,image/png,image/webp">
     <img id="imagePreview" class="img-fluid rounded mb-3" style="display:none; max-height:300px;">
 
@@ -28,7 +35,7 @@
     <button class="btn btn-primary" id="scanBtn" disabled>Pindai Teks</button>
   </div>
 
-  <div class="card p-4 mb-4" id="resultCard" style="display:none;">
+  <div class="card section-card mb-4" id="resultCard" style="display:none;">
     <label class="form-label fw-semibold">Hasil Ekstraksi (bisa diedit)</label>
     <textarea class="form-control mb-3" id="extractedText" rows="6"></textarea>
 
@@ -46,7 +53,7 @@
     </div>
   </div>
 
-  <h6 class="fw-bold mb-2">Riwayat Scan</h6>
+  <div class="section-title">Riwayat Scan</div>
   <div id="historyList" class="row g-2"></div>
 </div>
 

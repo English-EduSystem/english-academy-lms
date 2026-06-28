@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dashboard Siswa — English Academy Indonesia</title>
+<title>Dashboard — English Academy Indonesia</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
@@ -13,91 +13,83 @@
 
 <div id="app-navbar"></div>
 
-<div class="container pb-5" id="content" style="display:none;">
+<!-- Page header -->
+<div class="page-header" id="pageHeader" style="display:none;">
+  <div class="container">
+    <h4 class="fw-bold mb-1">Halo, <span id="studentName"></span> 👋</h4>
+    <p>Kelas <span id="studentClass">-</span> &nbsp;·&nbsp; Terus semangat belajar Bahasa Inggris!</p>
+  </div>
+</div>
 
-  <h4 class="fw-bold mb-1">Halo, <span id="studentName"></span> 👋</h4>
-  <p class="text-muted mb-4">Kelas <span id="studentClass"></span> — terus semangat belajar Bahasa Inggris!</p>
+<div class="container py-4 pb-5" id="content" style="display:none;">
 
+  <!-- Stat cards -->
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-      <div class="card p-3 text-center h-100">
-        <div class="fs-3 fw-bold text-primary" id="statAvgScore">-</div>
-        <div class="text-muted small">Rata-rata Nilai</div>
+      <div class="card stat-card blue">
+        <div class="stat-icon blue">📊</div>
+        <div class="stat-value text-primary" id="statAvgScore">-</div>
+        <div class="stat-label">Rata-rata Nilai</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card p-3 text-center h-100">
-        <div class="fs-3 fw-bold" style="color: var(--color-secondary);" id="statLessons">-</div>
-        <div class="text-muted small">Pelajaran Selesai</div>
+      <div class="card stat-card green">
+        <div class="stat-icon green">📚</div>
+        <div class="stat-value" style="color:var(--secondary);" id="statLessons">-</div>
+        <div class="stat-label">Pelajaran Selesai</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card p-3 text-center h-100">
-        <div class="fs-3 fw-bold text-accent" id="statCertificates">-</div>
-        <div class="text-muted small">Sertifikat</div>
+      <div class="card stat-card amber">
+        <div class="stat-icon amber">🏆</div>
+        <div class="stat-value text-accent" id="statCertificates">-</div>
+        <div class="stat-label">Sertifikat</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card p-3 text-center h-100">
-        <div class="fs-3 fw-bold text-danger" id="statNotifications">-</div>
-        <div class="text-muted small">Notifikasi Baru</div>
+      <div class="card stat-card red">
+        <div class="stat-icon red">🔔</div>
+        <div class="stat-value" style="color:var(--danger);" id="statNotifications">-</div>
+        <div class="stat-label">Notifikasi Baru</div>
       </div>
     </div>
   </div>
 
-  <div class="row g-3">
+  <!-- Info rows -->
+  <div class="row g-3 mb-4">
     <div class="col-md-4">
-      <div class="card p-3 h-100">
-        <h6 class="fw-bold mb-3">Nilai Terbaru</h6>
-        <ul class="list-group list-group-flush" id="recentScoresList">
-          <li class="list-group-item text-muted small">Belum ada nilai.</li>
-        </ul>
+      <div class="card section-card h-100">
+        <div class="section-title">Nilai Terbaru</div>
+        <div id="recentScoresList"><div class="empty-state"><div class="empty-icon">📝</div><p>Belum ada nilai.</p></div></div>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="card p-3 h-100">
-        <h6 class="fw-bold mb-3">Tugas Mendatang</h6>
-        <ul class="list-group list-group-flush" id="upcomingAssignmentsList">
-          <li class="list-group-item text-muted small">Tidak ada tugas mendatang.</li>
-        </ul>
+      <div class="card section-card h-100">
+        <div class="section-title">Tugas Mendatang</div>
+        <div id="upcomingAssignmentsList"><div class="empty-state"><div class="empty-icon">📋</div><p>Tidak ada tugas mendatang.</p></div></div>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="card p-3 h-100">
-        <h6 class="fw-bold mb-3">Ujian Mendatang</h6>
-        <ul class="list-group list-group-flush" id="upcomingExamsList">
-          <li class="list-group-item text-muted small">Tidak ada ujian mendatang.</li>
-        </ul>
+      <div class="card section-card h-100">
+        <div class="section-title">Ujian Mendatang</div>
+        <div id="upcomingExamsList"><div class="empty-state"><div class="empty-icon">📄</div><p>Tidak ada ujian mendatang.</p></div></div>
       </div>
     </div>
   </div>
 
-  <div class="row g-3 mt-1">
-    <div class="col-md-3 col-6">
-      <a href="lessons.html" class="card p-3 text-center text-decoration-none h-100">
-        <div class="fs-2">📚</div><div class="fw-semibold mt-1">Materi Belajar</div>
-      </a>
-    </div>
-    <div class="col-md-3 col-6">
-      <a href="ocr.html" class="card p-3 text-center text-decoration-none h-100">
-        <div class="fs-2">📷</div><div class="fw-semibold mt-1">OCR Scanner</div>
-      </a>
-    </div>
-    <div class="col-md-3 col-6">
-      <a href="translator.html" class="card p-3 text-center text-decoration-none h-100">
-        <div class="fs-2">🌐</div><div class="fw-semibold mt-1">Translator</div>
-      </a>
-    </div>
-    <div class="col-md-3 col-6">
-      <a href="vocabulary.html" class="card p-3 text-center text-decoration-none h-100">
-        <div class="fs-2">📖</div><div class="fw-semibold mt-1">Kosakata</div>
-      </a>
-    </div>
+  <!-- Quick links -->
+  <p class="fw-semibold mb-2" style="font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Menu Cepat</p>
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><a href="lessons.html" class="card lesson-card text-center"><span class="card-icon">📚</span><div class="card-title">Materi Belajar</div></a></div>
+    <div class="col-6 col-md-3"><a href="ocr.html" class="card lesson-card text-center"><span class="card-icon">📷</span><div class="card-title">OCR Scanner</div></a></div>
+    <div class="col-6 col-md-3"><a href="translator.html" class="card lesson-card text-center"><span class="card-icon">🌐</span><div class="card-title">Translator</div></a></div>
+    <div class="col-6 col-md-3"><a href="vocabulary.html" class="card lesson-card text-center"><span class="card-icon">📖</span><div class="card-title">Kosakata</div></a></div>
   </div>
 
-  <div class="card p-3 mt-3">
-    <h6 class="fw-bold mb-2">Riwayat Kehadiran (10 Terbaru)</h6>
-    <div id="attendanceList" class="small"></div>
+  <!-- Attendance -->
+  <div class="card section-card">
+    <div class="section-title">Kehadiran Terakhir</div>
+    <div id="attendanceList"><div class="empty-state"><p>Belum ada catatan kehadiran.</p></div></div>
   </div>
 
 </div>
@@ -115,60 +107,61 @@
     try {
       const data = await callApi('getStudentDashboard', { token: getSessionToken() });
 
-      document.getElementById('studentName').textContent = user.fullName;
+      document.getElementById('studentName').textContent  = user.fullName;
       document.getElementById('studentClass').textContent = data.className;
-      document.getElementById('statAvgScore').textContent = data.averageScore;
-      document.getElementById('statLessons').textContent = data.lessonsCompleted;
-      document.getElementById('statCertificates').textContent = data.certificateCount;
+      document.getElementById('statAvgScore').textContent      = data.averageScore;
+      document.getElementById('statLessons').textContent       = data.lessonsCompleted;
+      document.getElementById('statCertificates').textContent  = data.certificateCount;
       document.getElementById('statNotifications').textContent = data.unreadNotifications;
 
-      renderList('recentScoresList', data.recentScores, s =>
-        `<li class="list-group-item d-flex justify-content-between small">
-           <span>${s.sourceType}</span><strong>${s.score}</strong>
-         </li>`,
-        'Belum ada nilai.');
+      // Recent scores
+      const scoreEl = document.getElementById('recentScoresList');
+      scoreEl.innerHTML = data.recentScores.length
+        ? data.recentScores.map(s => `
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <span class="text-capitalize">${s.sourceType}</span>
+            <span class="fw-bold" style="color:${s.score>=70?'var(--secondary)':'var(--danger)'};">${s.score}</span>
+          </div>`).join('')
+        : '<div class="empty-state"><div class="empty-icon">📝</div><p>Belum ada nilai.</p></div>';
 
-      renderList('upcomingAssignmentsList', data.upcomingAssignments, a =>
-        `<li class="list-group-item small">
-           <a class="text-decoration-none" href="assignments.html">
-             <div class="fw-semibold">${a.title}</div>
-             <div class="text-muted">Tenggat: ${new Date(a.dueDate).toLocaleDateString('id-ID')}</div>
-           </a>
-         </li>`,
-        'Tidak ada tugas mendatang.');
+      // Upcoming assignments
+      const assignEl = document.getElementById('upcomingAssignmentsList');
+      assignEl.innerHTML = data.upcomingAssignments.length
+        ? data.upcomingAssignments.map(a => `
+          <a href="assignments.html" class="list-group-item text-decoration-none" style="color:inherit;">
+            <div class="fw-semibold" style="font-size:.85rem;">${a.title}</div>
+            <div style="font-size:.75rem;color:var(--muted);">Tenggat ${new Date(a.dueDate).toLocaleDateString('id-ID')}</div>
+          </a>`).join('')
+        : '<div class="empty-state"><div class="empty-icon">📋</div><p>Tidak ada tugas mendatang.</p></div>';
 
-      renderList('upcomingExamsList', data.upcomingExams, x =>
-        `<li class="list-group-item small">
-           <div class="fw-semibold">${x.title}</div>
-           <div class="text-muted">Mulai: ${new Date(x.scheduledStart).toLocaleString('id-ID')}</div>
-         </li>`,
-        'Tidak ada ujian mendatang.');
+      // Upcoming exams
+      const examEl = document.getElementById('upcomingExamsList');
+      examEl.innerHTML = data.upcomingExams.length
+        ? data.upcomingExams.map(x => `
+          <div class="list-group-item">
+            <div class="fw-semibold" style="font-size:.85rem;">${x.title}</div>
+            <div style="font-size:.75rem;color:var(--muted);">Mulai ${new Date(x.scheduledStart).toLocaleString('id-ID')}</div>
+          </div>`).join('')
+        : '<div class="empty-state"><div class="empty-icon">📄</div><p>Tidak ada ujian mendatang.</p></div>';
 
-      document.getElementById('content').style.display = 'block';
-
+      // Attendance
       const attendance = await callApi('getMyAttendance', { token: getSessionToken() });
-      const STATUS_LABEL = { present: 'Hadir', sick: 'Sakit', permitted: 'Izin', absent: 'Alpa' };
-      const STATUS_BADGE = { present: 'bg-success', sick: 'bg-warning text-dark', permitted: 'bg-info text-dark', absent: 'bg-danger' };
-      document.getElementById('attendanceList').innerHTML = attendance.slice(0, 10).map(a => `
-        <div class="d-flex justify-content-between border-bottom py-1">
-          <span>${new Date(a.sessionDate).toLocaleDateString('id-ID')}</span>
-          <span class="badge ${STATUS_BADGE[a.status] || 'bg-secondary'}">${STATUS_LABEL[a.status] || a.status}</span>
-        </div>
-      `).join('') || '<p class="text-muted small mb-0">Belum ada catatan kehadiran.</p>';
+      const STATUS = { present:'Hadir', sick:'Sakit', permitted:'Izin', absent:'Alpa' };
+      const SBADGE = { present:'bg-success', sick:'bg-warning', permitted:'bg-info', absent:'bg-danger' };
+      document.getElementById('attendanceList').innerHTML = attendance.length
+        ? attendance.slice(0,7).map(a => `
+          <div class="list-group-item d-flex justify-content-between">
+            <span>${new Date(a.sessionDate).toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'})}</span>
+            <span class="badge ${SBADGE[a.status]||'bg-secondary'}">${STATUS[a.status]||a.status}</span>
+          </div>`).join('')
+        : '<div class="empty-state"><p>Belum ada catatan kehadiran.</p></div>';
+
+      document.getElementById('pageHeader').style.display = 'block';
+      document.getElementById('content').style.display    = 'block';
     } catch (err) {
       Swal.fire('Gagal memuat dashboard', err.message, 'error');
     }
   })();
-
-  function renderList(elId, items, renderItem, emptyText) {
-    const el = document.getElementById(elId);
-    if (!items || items.length === 0) {
-      el.innerHTML = `<li class="list-group-item text-muted small">${emptyText}</li>`;
-      return;
-    }
-    el.innerHTML = items.map(renderItem).join('');
-  }
 </script>
-
 </body>
 </html>

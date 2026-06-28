@@ -12,8 +12,15 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">📚 Materi Belajar</h4>
+    <p>Pilih mata pelajaran dan mulai belajar</p>
+  </div>
+</div>
 
-<div class="container pb-5">
+
+<div class="container py-4 pb-5">
 
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb" id="breadcrumb">
@@ -108,7 +115,7 @@
         </div>`;
       grid.innerHTML = quizLink + (lessons.map(l => `
         <div class="col-md-6">
-          <div class="card p-3 h-100 lesson-card d-flex flex-row align-items-center" role="button"
+          <div class="card lesson-card d-flex flex-row align-items-center gap-3" role="button"
                onclick="window.location.href='lesson-detail.html?lessonId=${l.lessonId}&moduleId=${moduleId}'">
             <div class="fs-3 me-3">${contentTypeIcon(l.contentType)}</div>
             <div>

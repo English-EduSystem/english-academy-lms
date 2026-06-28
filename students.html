@@ -12,8 +12,15 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">👨‍🎓 Data Siswa</h4>
+    <p>Tambah dan kelola siswa per kelas</p>
+  </div>
+</div>
 
-<div class="container pb-5">
+
+<div class="container py-4 pb-5">
 
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
@@ -26,14 +33,14 @@
     </div>
   </div>
 
-  <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
-    <label class="text-muted small mb-0">Kelas:</label>
-    <select class="form-select w-auto" id="classSelect"></select>
-    <button class="btn btn-sm btn-outline-secondary" id="printBtn">🖨️ Cetak Daftar Password</button>
+  <div class="toolbar">
+    <label class="form-label mb-0 fw-semibold" style="white-space:nowrap;">Kelas:</label>
+    <select class="form-select" style="width:auto;min-width:160px;" id="classSelect"></select>
+    <button class="btn btn-outline-secondary btn-sm" id="printBtn">🖨 Cetak Daftar Password</button>
   </div>
 
   <!-- Daftar siswa -->
-  <div class="card p-0">
+  <div class="card p-0" style="overflow:hidden;">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
@@ -45,7 +52,7 @@
         </tr>
       </thead>
       <tbody id="rosterBody">
-        <tr><td colspan="5" class="text-muted text-center py-4">Memuat...</td></tr>
+        <tr><td colspan="5" class="text-muted text-center py-4" style="font-size:.85rem;">Memuat...</td></tr>
       </tbody>
     </table>
   </div>
@@ -331,7 +338,7 @@
 
       if (!roster.length) {
         document.getElementById('rosterBody').innerHTML =
-          '<tr><td colspan="5" class="text-muted text-center py-4">Belum ada siswa di kelas ini.</td></tr>';
+          '<tr><td colspan="5" style="padding:0;"><div class="empty-state"><div class="empty-icon">👨‍🎓</div><p>Belum ada siswa di kelas ini.<br>Klik <strong>+ Tambah Siswa</strong> untuk menambahkan.</p></div></td></tr>';
         return;
       }
 
@@ -469,5 +476,7 @@
     w.document.close();
   }
 </script>
+
+
 </body>
 </html>

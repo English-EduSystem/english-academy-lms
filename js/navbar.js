@@ -1,122 +1,158 @@
 /**
- * js/navbar.js
- * ---------------------------------------------------------------------------
- * Setiap halaman yang butuh login memanggil renderNavbar('pageKey') di awal
- * script-nya. Menu yang muncul menyesuaikan role user yang sedang login.
- * ---------------------------------------------------------------------------
+ * navbar.js — Shared navigation bar (rendered into every authenticated page)
+ * Renders an <ea-navbar> with: brand · nav links · notif bell · user chip · logout
  */
 
 const NAV_LINKS = {
   student: [
-    { key: 'dashboard', label: 'Dashboard', href: 'dashboard-student.html' },
-    { key: 'lessons', label: 'Materi', href: 'lessons.html' },
-    { key: 'assignments', label: 'Tugas', href: 'assignments.html' },
-    { key: 'ocr', label: 'OCR Scanner', href: 'ocr.html' },
-    { key: 'translator', label: 'Translator', href: 'translator.html' },
-    { key: 'vocabulary', label: 'Kosakata', href: 'vocabulary.html' },
-    { key: 'certificates', label: 'Sertifikat', href: 'certificates.html' }
+    { key: 'dashboard',     label: 'Dashboard',   href: 'dashboard-student.html' },
+    { key: 'lessons',       label: 'Materi',       href: 'lessons.html' },
+    { key: 'assignments',   label: 'Tugas',        href: 'assignments.html' },
+    { key: 'quiz',          label: 'Kuis',         href: 'quiz.html' },
+    { key: 'exam',          label: 'Ujian',        href: 'exam.html' },
+    { key: 'ocr',           label: 'OCR',          href: 'ocr.html' },
+    { key: 'translator',    label: 'Translator',   href: 'translator.html' },
+    { key: 'vocabulary',    label: 'Kosakata',     href: 'vocabulary.html' },
+    { key: 'certificates',  label: 'Sertifikat',   href: 'certificates.html' },
   ],
   teacher: [
-    { key: 'dashboard', label: 'Dashboard', href: 'dashboard-teacher.html' },
-    { key: 'students', label: 'Data Siswa', href: 'students.html' },
-    { key: 'content-manager', label: 'Materi & Tugas', href: 'content-manager.html' },
-    { key: 'gradebook', label: 'Penilaian', href: 'gradebook.html' },
-    { key: 'attendance', label: 'Kehadiran', href: 'attendance.html' }
+    { key: 'dashboard',       label: 'Dashboard',      href: 'dashboard-teacher.html' },
+    { key: 'students',        label: 'Data Siswa',      href: 'students.html' },
+    { key: 'content-manager', label: 'Materi & Tugas',  href: 'content-manager.html' },
+    { key: 'gradebook',       label: 'Penilaian',       href: 'gradebook.html' },
+    { key: 'attendance',      label: 'Kehadiran',       href: 'attendance.html' },
   ],
   admin: [
-    { key: 'dashboard', label: 'Dashboard', href: 'dashboard-admin.html' },
-    { key: 'students', label: 'Data Siswa', href: 'students.html' },
-    { key: 'user-management', label: 'Pengguna', href: 'user-management.html' },
-    { key: 'content-manager', label: 'Materi & Tugas', href: 'content-manager.html' },
-    { key: 'analytics', label: 'Analitik', href: 'analytics.html' },
-    { key: 'settings', label: 'Pengaturan', href: 'settings.html' }
-  ]
+    { key: 'dashboard',       label: 'Dashboard',      href: 'dashboard-admin.html' },
+    { key: 'students',        label: 'Data Siswa',      href: 'students.html' },
+    { key: 'user-management', label: 'Pengguna',        href: 'user-management.html' },
+    { key: 'content-manager', label: 'Materi & Tugas',  href: 'content-manager.html' },
+    { key: 'analytics',       label: 'Analitik',        href: 'analytics.html' },
+    { key: 'settings',        label: 'Pengaturan',      href: 'settings.html' },
+  ],
 };
 
 function renderNavbar(activeKey) {
   const user = getCurrentUser();
   if (!user) return;
 
-  const links = NAV_LINKS[user.role] || [];
-  const linksHtml = links.map(link => `
-    <li class="nav-item">
-      <a class="nav-link ${link.key === activeKey ? 'active fw-semibold' : ''}" href="${link.href}">${link.label}</a>
-    </li>
-  `).join('');
+  const links   = NAV_LINKS[user.role] || [];
+  const initials = (user.fullName || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
-  const navHtml = `
-  <nav class="navbar navbar-expand-lg bg-white shadow-sm mb-4">
-    <div class="container">
-      <a class="navbar-brand fw-bold" href="dashboard-${user.role}.html" style="color: var(--color-primary);">
-        English Academy <span class="text-accent">Indonesia</span>
+  const linksHtml = links.map(l => `
+    <li>
+      <a class="nav-link${l.key === activeKey ? ' active' : ''}" href="${l.href}">${l.label}</a>
+    </li>`).join('');
+
+  const html = `
+  <nav class="ea-navbar">
+    <div class="container-fluid">
+      <a class="ea-brand" href="dashboard-${user.role}.html">
+        🎓 English<span class="dot">.</span>Academy
       </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="mainNav">
-        <ul class="navbar-nav me-auto">${linksHtml}</ul>
-        <div class="d-flex align-items-center gap-3">
-          <div class="dropdown">
-            <button class="btn btn-sm btn-light position-relative" data-bs-toggle="dropdown" id="notifBellBtn">
-              🔔
-              <span class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle" id="notifBadge" style="display:none; font-size:0.6rem;"></span>
-            </button>
-            <div class="dropdown-menu dropdown-menu-end p-2" style="width: 320px; max-height: 400px; overflow-y: auto;" id="notifDropdown">
-              <div class="text-muted small text-center py-3">Memuat...</div>
+
+      <ul class="ea-nav-links">${linksHtml}</ul>
+
+      <div class="ea-nav-right">
+        <!-- Bell -->
+        <div style="position:relative;">
+          <button class="notif-bell" id="notifBellBtn" title="Notifikasi">
+            🔔
+            <span class="notif-badge" id="notifBadge" style="display:none;"></span>
+          </button>
+          <div class="notif-dropdown" id="notifDropdown" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 4px 8px;border-bottom:1px solid var(--border);margin-bottom:4px;">
+              <span style="font-size:.8rem;font-weight:600;color:var(--text);">Notifikasi</span>
+              <button onclick="markAllNotifsRead()" style="background:none;border:none;font-size:.75rem;color:var(--primary);cursor:pointer;padding:0;">Tandai semua dibaca</button>
             </div>
+            <div id="notifList"><div style="text-align:center;padding:20px;color:var(--muted);font-size:.82rem;">Memuat...</div></div>
           </div>
-          <a href="profile.html" class="text-muted small text-decoration-none ${activeKey === 'profile' ? 'fw-semibold' : ''}">
-            ${user.fullName} <span class="badge bg-light text-dark border">${user.role}</span>
-          </a>
-          <button class="btn btn-sm btn-outline-secondary" id="navLogoutBtn">Keluar</button>
         </div>
+
+        <!-- User chip -->
+        <a href="profile.html" class="ea-user-chip">
+          <div class="ea-avatar">${initials}</div>
+          <span class="user-name" style="font-size:.8rem;font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${user.fullName}</span>
+          <span class="role-badge">${user.role}</span>
+        </a>
+
+        <!-- Logout -->
+        <button class="ea-logout-btn" id="navLogoutBtn">Keluar</button>
       </div>
     </div>
   </nav>`;
 
-  document.getElementById('app-navbar').outerHTML = navHtml;
+  // Replace the placeholder div
+  const placeholder = document.getElementById('app-navbar');
+  if (placeholder) {
+    placeholder.outerHTML = html;
+  } else {
+    document.body.insertAdjacentHTML('afterbegin', html);
+  }
+
+  // Wire up logout
   document.getElementById('navLogoutBtn').addEventListener('click', async () => {
-    try { await callApi('logout', { token: getSessionToken() }); } catch (e) { /* ignore */ }
+    try { await callApi('logout', { token: getSessionToken() }); } catch(e) {}
     clearSession();
     window.location.href = 'index.html';
   });
 
-  initNotificationBell();
+  // Notification bell toggle
+  const bell     = document.getElementById('notifBellBtn');
+  const dropdown = document.getElementById('notifDropdown');
+  let dropOpen   = false;
+
+  bell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropOpen = !dropOpen;
+    dropdown.style.display = dropOpen ? 'block' : 'none';
+    if (dropOpen) loadNotifDropdown();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!bell.contains(e.target) && !dropdown.contains(e.target)) {
+      dropOpen = false;
+      dropdown.style.display = 'none';
+    }
+  });
+
+  // Start polling badge count
+  refreshNotifBadge();
+  setInterval(refreshNotifBadge, 30000);
 }
 
-async function initNotificationBell() {
-  await refreshNotifBadge();
-  setInterval(refreshNotifBadge, 30000); // poll — Apps Script has no push/websockets
-
-  document.getElementById('notifBellBtn').addEventListener('click', loadNotifDropdown);
-}
-
+// ── Notification helpers ───────────────────────────────────────────────────
 async function refreshNotifBadge() {
   try {
     const { count } = await callApi('getUnreadNotificationCount', { token: getSessionToken() });
     const badge = document.getElementById('notifBadge');
     if (!badge) return;
-    if (count > 0) { badge.textContent = count > 9 ? '9+' : count; badge.style.display = 'block'; }
-    else { badge.style.display = 'none'; }
-  } catch (e) { /* non-critical */ }
+    if (count > 0) {
+      badge.textContent = count > 9 ? '9+' : count;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e) {}
 }
 
 async function loadNotifDropdown() {
-  const dropdown = document.getElementById('notifDropdown');
+  const list = document.getElementById('notifList');
+  if (!list) return;
   try {
     const notifs = await callApi('listMyNotifications', { token: getSessionToken() });
-    const markAllHtml = notifs.length
-      ? `<button class="btn btn-sm btn-link p-0 mb-2" onclick="markAllNotifsRead()">Tandai semua dibaca</button>`
-      : '';
-    dropdown.innerHTML = markAllHtml + (notifs.map(n => `
-      <div class="border-bottom py-2 small ${n.isRead === 'TRUE' ? 'text-muted' : 'fw-semibold'}" role="button" onclick="markNotifRead('${n.notificationId}')">
-        <div>${n.title}</div>
-        <div class="fw-normal text-muted" style="font-size:0.8rem;">${n.message}</div>
-        <div class="fw-normal text-muted" style="font-size:0.7rem;">${new Date(n.createdAt).toLocaleString('id-ID')}</div>
-      </div>
-    `).join('') || '<div class="text-muted small text-center py-3">Belum ada notifikasi.</div>');
-  } catch (e) {
-    dropdown.innerHTML = '<div class="text-muted small text-center py-3">Gagal memuat notifikasi.</div>';
+    if (!notifs.length) {
+      list.innerHTML = '<div style="text-align:center;padding:24px 12px;color:var(--muted);font-size:.82rem;">Belum ada notifikasi 🎉</div>';
+      return;
+    }
+    list.innerHTML = notifs.map(n => `
+      <div class="notif-item ${n.isRead !== 'TRUE' ? 'unread' : ''}" onclick="markNotifRead('${n.notificationId}')">
+        <div class="notif-title">${n.title}</div>
+        <div class="notif-body">${n.message}</div>
+        <div class="notif-time">${new Date(n.createdAt).toLocaleString('id-ID')}</div>
+      </div>`).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:.82rem;">Gagal memuat notifikasi.</div>';
   }
 }
 
@@ -125,7 +161,7 @@ async function markNotifRead(notificationId) {
     await callApi('markNotificationRead', { token: getSessionToken(), notificationId });
     refreshNotifBadge();
     loadNotifDropdown();
-  } catch (e) { /* non-critical */ }
+  } catch(e) {}
 }
 
 async function markAllNotifsRead() {
@@ -133,5 +169,5 @@ async function markAllNotifsRead() {
     await callApi('markAllNotificationsRead', { token: getSessionToken() });
     refreshNotifBadge();
     loadNotifDropdown();
-  } catch (e) { /* non-critical */ }
+  } catch(e) {}
 }

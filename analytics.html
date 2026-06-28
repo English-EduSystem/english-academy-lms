@@ -12,19 +12,26 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">📊 Analitik</h4>
+    <p>Grafik nilai dan statistik sistem</p>
+  </div>
+</div>
 
-<div class="container pb-5">
+
+<div class="container py-4 pb-5">
   <h5 class="fw-bold mb-3">📊 Analitik</h5>
 
   <div class="row g-3">
     <div class="col-md-6">
-      <div class="card p-3">
+      <div class="card section-card">
         <h6 class="fw-bold">Rata-rata Nilai per Mata Pelajaran</h6>
         <canvas id="scoreChart" height="220"></canvas>
       </div>
     </div>
     <div class="col-md-6">
-      <div class="card p-3">
+      <div class="card section-card">
         <h6 class="fw-bold">Jumlah Siswa per Tingkat</h6>
         <canvas id="gradeChart" height="220"></canvas>
       </div>

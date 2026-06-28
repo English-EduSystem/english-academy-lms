@@ -12,6 +12,13 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">🏆 Sertifikat Saya</h4>
+    <p>Unduh sertifikat penyelesaian modul</p>
+  </div>
+</div>
+
 
 <div class="container pb-5" style="max-width: 800px;">
   <h5 class="fw-bold mb-1">🏆 Sertifikat Saya</h5>
@@ -34,8 +41,8 @@
       const certs = await callApi('listMyCertificates', { token: getSessionToken() });
       document.getElementById('certList').innerHTML = certs.map(c => `
         <div class="col-md-6">
-          <div class="card p-3 h-100">
-            <div class="fs-2 mb-2">🎓</div>
+          <div class="card section-card h-100">
+            <div style="font-size:2.2rem;margin-bottom:10px;">🎓</div>
             <div class="fw-semibold">${c.title}</div>
             <div class="text-muted small mb-2">Diterbitkan ${new Date(c.issueDate).toLocaleDateString('id-ID')}</div>
             <div class="text-muted small mb-2">Kode verifikasi: <code>${c.qrVerificationCode}</code></div>

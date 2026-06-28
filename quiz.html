@@ -12,6 +12,13 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">📝 Kuis</h4>
+    <p>Latihan soal per modul</p>
+  </div>
+</div>
+
 
 <div class="container pb-5" style="max-width: 800px;">
 
@@ -23,7 +30,7 @@
 
   <!-- ====== MENGERJAKAN KUIS ====== -->
   <div id="quizAttemptView" style="display:none;">
-    <div class="card p-4">
+    <div class="card section-card">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-bold mb-0" id="quizTitle"></h5>
         <span class="badge bg-primary fs-6" id="quizTimer" style="display:none;"></span>
@@ -41,8 +48,8 @@
       <p class="text-muted" id="resultDetail"></p>
       <a href="lessons.html" class="btn btn-primary mt-2">Kembali ke Materi</a>
     </div>
-    <div class="card p-4 mt-3">
-      <h6 class="fw-bold mb-3">🏆 Papan Peringkat</h6>
+    <div class="card section-card mt-3">
+      <div class="section-title">🏆 Papan Peringkat</div>
       <ol id="leaderboardList" class="mb-0"></ol>
     </div>
   </div>

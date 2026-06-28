@@ -12,6 +12,13 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">📋 Tugas</h4>
+    <p>Daftar tugas dan status pengumpulan</p>
+  </div>
+</div>
+
 
 <div class="container pb-5" style="max-width: 800px;">
   <h5 class="fw-bold mb-1">📝 Tugas</h5>
@@ -46,7 +53,7 @@
         const isPastDue = new Date(a.dueDate) < new Date();
         return `
         <div class="col-12">
-          <div class="card p-3">
+          <div class="card section-card">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
               <div>
                 <div class="fw-semibold">${a.title}</div>

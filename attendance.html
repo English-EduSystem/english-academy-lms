@@ -12,17 +12,24 @@
 <body>
 
 <div id="app-navbar"></div>
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">🗓️ Kehadiran</h4>
+    <p>Catat kehadiran siswa per sesi belajar</p>
+  </div>
+</div>
 
-<div class="container pb-5">
+
+<div class="container py-4 pb-5">
   <h5 class="fw-bold mb-3">🗓️ Kehadiran</h5>
 
-  <div class="d-flex gap-2 mb-3 flex-wrap">
+  <div class="toolbar">
     <select class="form-select w-auto" id="classSelect"></select>
     <input type="date" class="form-control w-auto" id="dateInput">
     <button class="btn btn-primary" id="loadBtn">Muat Data</button>
   </div>
 
-  <div class="card p-3">
+  <div class="card section-card">
     <table class="table">
       <thead><tr><th>Siswa</th><th>Status</th></tr></thead>
       <tbody id="rosterBody"></tbody>
@@ -79,7 +86,7 @@
           </select>
         </td>
       </tr>
-    `).join('') || '<tr><td colspan="2" class="text-muted">Belum ada siswa di kelas ini.</td></tr>';
+    `).join('') || '<tr><td colspan="2" style="padding:0;"><div class="empty-state"><div class="empty-icon">👥</div><p>Belum ada siswa di kelas ini.</p></div></td></tr>';
   }
 
   async function saveAttendance() {
